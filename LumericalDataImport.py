@@ -26,7 +26,7 @@ import json
 from collections import Counter
 import natsort
 
-from AuxFunct import *
+from AuxFunct import (Get_FileList,MatLoader,CUV,jsonhandler,cprint,PathSet,AbsPowIntegrator)
 
 ## for Palatino and other serif fonts use:
 plt.rcParams.update({
