@@ -220,6 +220,23 @@ def PathSet(filename,**kwargs):
 
 #%%
 def jsonhandler(**kwargs):
+    """
+     DESCRIPTION.
+     A simple script that handles saving/loading json files from/to python dictionaries. 
+
+    Parameters
+    ----------
+    **kwargs :
+            kwargdict = {'f':'filename','fn':'filename','filename':'filename',
+                 'd':'data','dat':'data','data':'data',
+                 'a':'action','act':'action','action':'action',
+                 'p':'pathtype','pt':'pathtype','pathtype':'pathtype'}
+
+    Returns
+    -------
+    Depends: If loading, returns the file, if saving - returns nothing
+
+    """
     kwargdict = {'f':'filename','fn':'filename','filename':'filename',
                  'd':'data','dat':'data','data':'data',
                  'a':'action','act':'action','action':'action',
@@ -236,13 +253,13 @@ def jsonhandler(**kwargs):
    
     if hasattr(j,"filename") and hasattr(j,"action") == True:    
         if j.action in ['read','r']:
-            with open(j.filename,'r') as fread:
+            with open(PathSet(j.filename,pt=j.pathtype),'r') as fread:
                 data = json.load(fread)
                 return(data)
             
         elif j.action in ['write','w']:
             try:
-                with open(j.filename,'w') as outfile:
+                with open(PathSet(j.filename,pt=j.pathtype),'w') as outfile:
                     cprint(['saved',str(j.data),'to',str(outfile)],mt=['note','stat','note','stat'])
                     json.dump(j.data,outfile)
             except:
@@ -254,6 +271,7 @@ def CUV(**kwargs):
     ACTLIST = ['reset','load']
     action   = kwargs.get('act',None)
     data     = kwargs.get('data',None)
+    pathtype = kwargs.get('pt','rel')
     
     if len(kwargs) == 0:
         action = str(input(cprint(['Please enter one of the following actions',' [', ",".join(ACTLIST),']'],mt=['note','stat'],tg=True)))
@@ -263,35 +281,35 @@ def CUV(**kwargs):
     
     if action == 'reset':
         cprint('Writing default settings to file',mt='note')
-        RFile = os.getcwd()+"\\DataImportSettings.json"
+        RFile = "DataImportSettings.json"
         Default = {'Debug':False,'FileLoad':True,'AltFile':None,'DefaultFile':RFile,'ConsoleOutput':True}
-        jsonhandler(f = Default['DefaultFile'],d = Default,a='w')
-        return(jsonhandler(f=RFile,a='r'))
+        jsonhandler(f = Default['DefaultFile'],pt=pathtype,d = Default,a='w')
+        return(jsonhandler(f=RFile,pt=pathtype,a='r'))
     
     if action == 'session':
-        RFile = os.getcwd()+"\\DataImportSettings.json"
-        ddata = jsonhandler(f = RFile,a='r')
+        RFile = "DataImportSettings.json"
+        ddata = jsonhandler(f = RFile,pt=pathtype,a='r')
         if ddata['AltFile'] is not None:
             try:
                 cprint(['Saving user set settings to path = ',ddata['AltFile']],mt=['note','stat'])
-                jsonhandler(f = ddata['AltFile'], d = data, a='w')
+                jsonhandler(f = ddata['AltFile'],pt=pathtype, d = data, a='w')
                 
             except:
                 cprint(['Altfile failed, setting user set settings to path = ',ddata['DefaultFile']],mt=['wrn','stat'])
-                jsonhandler(f = ddata['DefaultFile'], d = data, a='w')
+                jsonhandler(f = ddata['DefaultFile'],pt=pathtype, d = data, a='w')
         else:
-            cprint(['Writting current user settings to path = ',ddata['DefaultFile']],mt=['note','stat'])
-            jsonhandler(f = ddata['DefaultFile'], d = data, a='w')  
+            cprint(['Writing current user settings to path = ',PathSet(ddata['DefaultFile'],pt=pathtype)],mt=['note','stat'])
+            jsonhandler(f = ddata['DefaultFile'],pt=pathtype, d = data, a='w')  
 
        
     if action == 'load':
         root = tk.Tk()
         file_path = askopenfilename()
         tk.Tk.withdraw(root)
-        print(file_path)
+        jsonhandler(f = file_path,pt='abs', a='r')
         
     if action == 'init':
-        DefaultFile = os.getcwd()+"\\DataImportSettings.json"
+        DefaultFile = "DataImportSettings.json"
         ddata = jsonhandler(f = DefaultFile,a='r')
         if ddata['AltFile'] is not None:
             try:
