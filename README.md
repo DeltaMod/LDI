@@ -2,7 +2,7 @@
 Lumerical Data format importing schemes! 
 Contains the main LDI file (LumericalDataImport.py) and also som QofL functions for console printing, file categorisation, json settings exporting and importing (and eventually more) with some additional functions in AuxFuct.py
 
-**Keep in mind, this project is VERY EARLY in development, and will likely never be fully finished unless I somehow end up using all parts of lumerical at least once!
+**Keep in mind, this project is VERY EARLY in development, and will likely never be fully finished unless I somehow end up using all parts of lumerical at least once!**
 
 The general goal of this project is to (eventually) support importing data from most of the lumerical monitors without the need for manual tweaking, and then feature analysis functions that mirror that of the Lumerical suite.
 
