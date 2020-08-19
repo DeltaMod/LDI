@@ -91,6 +91,8 @@ if UV['Debug'] == False:
     plt.figure(2)
     plt.plot(MDat['lambda'],MDat['P_tot'])
 
+
+CUV(act = 'session',data=UV) #Saves user settings after each complete run!
 """
 comp = [
 7e-07, 0.00377263,

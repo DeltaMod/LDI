@@ -250,6 +250,8 @@ def jsonhandler(**kwargs):
 def CUV(**kwargs):
     ACTLIST = ['reset','load']
     action   = kwargs.get('act',None)
+    data     = kwargs.get('data',None)
+    
     if len(kwargs) == 0:
         action = str(input(cprint(['Please enter one of the following actions',' [', ",".join(ACTLIST),']'],mt=['note','stat'],tg=True)))
         if action not in ['reset','load']:
@@ -262,6 +264,22 @@ def CUV(**kwargs):
         Default = {'Debug':False,'FileLoad':True,'AltFile':None,'DefaultFile':RFile}
         jsonhandler(f = Default['DefaultFile'],d = Default,a='w')
         return(jsonhandler(f=RFile,a='r'))
+    
+    if action == 'session':
+        RFile = os.getcwd()+"\\DataImportSettings.json"
+        ddata = jsonhandler(f = RFile,a='r')
+        if ddata['AltFile'] is not None:
+            try:
+                cprint(['Saving user set settings to path = ',ddata['AltFile']],mt=['note','stat'])
+                jsonhandler(f = ddata['AltFile'], d = data, a='w')
+                
+            except:
+                cprint(['Altfile failed, setting user set settings to path = ',ddata['DefaultFile']],mt=['wrn','stat'])
+                jsonhandler(f = ddata['DefaultFile'], d = data, a='w')
+        else:
+            cprint(['Writting current user settings to path = ',ddata['DefaultFile']],mt=['note','stat'])
+            jsonhandler(f = ddata['DefaultFile'], d = data, a='w')  
+
        
     if action == 'load':
         root = tk.Tk()
@@ -284,7 +302,7 @@ def CUV(**kwargs):
             cprint(['Initialising with last session user settings'],mt=['note'])
             return(ddata)
         
-        return(jsonhandler(f=ddata['D'],a='r'))
+        return(jsonhandler(f=ddata['DefaultFile'],a='r'))
     
 def Get_FileList(path,**kwargs):
     """
@@ -303,6 +321,8 @@ def Get_FileList(path,**kwargs):
     ext = kwargs.get('ext',None)
     ST  = kwargs.get('sorting',None)  
     
+    if type(ext) == str:
+        ext = tuple([ext])
     cprint('=-=-=-=-=-=-=-=-=-=-=- Running: Get_FileList -=-=-=-=-=-=-=-=-=-=-=',mt = 'funct')
     Dpath = PathSet(path,pt=PT)
     #Checking that ST has been selected correctly
@@ -315,7 +335,7 @@ def Get_FileList(path,**kwargs):
     if type(ext) is str and ext.startswith('.') is False:
         ext = '.'+ext
         cprint('Correcting incorrect extension from ext = \''+ext[1:]+ '\' to ext = \''+ext+'\'',mt='caution')
-    elif type(ext) is tuple:
+    elif type(ext) is tuple: 
         extreplacer = []
         for i in range(len(ext)):
             if ext[i].startswith('.') is False:
@@ -363,8 +383,24 @@ def Get_FileList(path,**kwargs):
   
 def MatLoader(file,**kwargs):
     cprint('=-=-=-=-=-=-=-=-=-=-=- Running: MatLoader -=-=-=-=-=-=-=-=-=-=-=',mt = 'funct')
+    
+    kwargdict = {'txt':'txt','textfile':'txt',
+                 'dir':'path','directory':'path','path':'path','p':'path',
+                 'tf':'tf','txtfile':'tf'}
+    class kw:
+        txt  = False
+        path = 'same'
+        tf   = None 
+    for kwarg in kwargs:
+        try:
+            setattr(kw,kwargdict[kwarg], kwargs.get(kwarg,None))
+        except:
+            cprint(['kwarg =',kwarg,'does not exist!',' Skipping kwarg eval.'],mt = ['wrn','err','wrn','note'])
+    
+    #Mat File Loading
     FIELDDICT = {}
     f = h5py.File(file,'r')
+    
     for k, v in f.items():
         FIELDDICT[k] = np.array(v)
     FIELDLIST = list(FIELDDICT.keys()) 
@@ -382,7 +418,18 @@ def MatLoader(file,**kwargs):
                 data[field] = data[field][0]
                 cprint(['corrected','data['+str(field)+'].shape','from',str(oldshape),'to',str(data[field].shape)],mt=['note','status','note','wrn','note','status'])
     
-    
+    #.txt File Loading
+    if kw.txt == True:
+        #Get_FileList()
+        mname = file.split('\\')[-1]
+        data['matname'] = mname
+        fname = mname.split('.')[0]
+        if kw.tf == None and kw.path == 'same':
+            path = os.path.dirname(file)
+        txtlist = Get_FileList(path, ext='.txt')
+        
+        
+
         
     tranconf = 0
     powconf  = 0 
