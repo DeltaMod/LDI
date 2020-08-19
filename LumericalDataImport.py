@@ -56,7 +56,7 @@ DList,NList = Get_FileList('Data\\12-08-2020-pabs', ext = (('mat','txt')),sortin
 if UV['Debug'] == False:
     AbsPow = []
     for file in DList['.mat']:
-        MDat,MFi = MatLoader(file)    
+        MDat,MFi = MatLoader(file,txt=True)    
         try:
             MDat['P_abs'] = np.reshape(MDat['Pabs'],[MDat['lambda'].shape[0],MDat['z'].shape[0],MDat['y'].shape[0],MDat['x'].shape[0]])   
             #plt.imshow(np.rot90(MDat['P_abs'][0,:,:,6])) displays the same (xslice for [y,z]) as in lumerical

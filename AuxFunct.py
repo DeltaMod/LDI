@@ -49,6 +49,8 @@ def cprint(String,**kwargs):
     cprint also supports lists with different styles and options applied. Use:
         cprint([string1,string2],fg = [fg1,fg2],bg = [bg1,bg2],ts = [ts1,ts2])
     tr: textreturn - returns the escape character strng instead - does not produce a print output!
+    co: console output - a global variable if you want an option to disable console ouput throughout your code!
+        list of acceptable entries: [True,False], default: False
     """
     
     msgtype   = kwargs.get('mt','custom')
@@ -58,6 +60,7 @@ def cprint(String,**kwargs):
     SC_str    = kwargs.get('sc',None)
     jc_str    = kwargs.get('jc',' ')
     tg_bool   = kwargs.get('tg',False)
+    co_bool   = kwargs.get('co',False)
     
     #We convert all of these to lists to make sure that we can give the software strings or lists without any problems
     if type(String) == str:
@@ -175,11 +178,11 @@ def cprint(String,**kwargs):
                 cprint(['Message preset', 'mt = '+str(msgtype[i]),'does not exist. Printing normal text instead!'],mt = ['wrn','err','wrn'])
    
         PRINTSTR.append(STARTCODE+String[i]+EXITCODE+jc_str[i])
-         
-    if tg_bool == False:
-        print(''.join(PRINTSTR))
-    else:
-        return(''.join(PRINTSTR))
+    if co_bool == False:     
+        if tg_bool == False:
+            print(''.join(PRINTSTR))
+        else:
+            return(''.join(PRINTSTR))
 
 
 
@@ -261,7 +264,7 @@ def CUV(**kwargs):
     if action == 'reset':
         cprint('Writing default settings to file',mt='note')
         RFile = os.getcwd()+"\\DataImportSettings.json"
-        Default = {'Debug':False,'FileLoad':True,'AltFile':None,'DefaultFile':RFile}
+        Default = {'Debug':False,'FileLoad':True,'AltFile':None,'DefaultFile':RFile,'ConsoleOutput':True}
         jsonhandler(f = Default['DefaultFile'],d = Default,a='w')
         return(jsonhandler(f=RFile,a='r'))
     
@@ -321,8 +324,6 @@ def Get_FileList(path,**kwargs):
     ext = kwargs.get('ext',None)
     ST  = kwargs.get('sorting',None)  
     
-    if type(ext) == str:
-        ext = tuple([ext])
     cprint('=-=-=-=-=-=-=-=-=-=-=- Running: Get_FileList -=-=-=-=-=-=-=-=-=-=-=',mt = 'funct')
     Dpath = PathSet(path,pt=PT)
     #Checking that ST has been selected correctly
@@ -332,11 +333,15 @@ def Get_FileList(path,**kwargs):
     
     #Filtering out the intended file types from the filenames
     #First, checking that the format for ext is correct.
-    if type(ext) is str and ext.startswith('.') is False:
-        ext = '.'+ext
-        cprint('Correcting incorrect extension from ext = \''+ext[1:]+ '\' to ext = \''+ext+'\'',mt='caution')
+    extreplacer = []
+    if type(ext) is str:
+        if ext.startswith('.') is False:
+            ext = '.'+ext
+            cprint('Correcting incorrect extension from ext = \''+ext[1:]+ '\' to ext = \''+ext+'\'',mt='caution')
+        extreplacer.append(ext)
+        ext = tuple(extreplacer)
     elif type(ext) is tuple: 
-        extreplacer = []
+        
         for i in range(len(ext)):
             if ext[i].startswith('.') is False:
                 extreplacer.append('.'+ext[i])
@@ -344,7 +349,6 @@ def Get_FileList(path,**kwargs):
             else:
                 extreplacer.append(ext[i])
         ext = tuple(extreplacer)
-        print(ext)
     else:
         ext = None
         cprint('ext must be in string or tuple format - setting ext = None and gathering all files instead',mt='err')
@@ -372,7 +376,7 @@ def Get_FileList(path,**kwargs):
             cprint([ex, ' files were sorted numerically'],fg=['g','c'])
         DList = [Dpath+'\\'+name for name in NList]
     
-    cprint(['A total of',str(len(DList)), 'filenames were recovered.']+summary,ts='b',fg=['c','g','c',None,'g'],jc = [' ',' ','\n'])
+    cprint(['A total of',str(len(DList)), 'file extensions were scanned.']+summary,ts='b',fg=['c','g','c',None,'g'],jc = [' ',' ','\n'])
     
     
     return(DList,NList)
@@ -380,17 +384,61 @@ def Get_FileList(path,**kwargs):
 #%%
 #We probably only want to only load one matfile at a time, because otherwise we're going to quickly run out of memory!
 
+def maxRepeating(str, **kwargs): 
+    """
+    DESCRIPTION.
+    A function used to find and count the max repeating string, can be used to guess
+    Parameters
+    ----------
+    str : TYPE
+        DESCRIPTION.
+    **kwargs : 
+        guess : TYPE = str
+        allows you to guess the escape character, and it will find the total number of that character only!
+
+    Returns
+    -------
+    res,coount
+    Character and total number consecutive
+
+    """
+    guess = kwargs.get('guess',None)
+    l = len(str) 
+    count = 0
+  
+    # Find the maximum repeating  
+    # character starting from str[i] 
+    res = str[0] 
+    for i in range(l): 
+          
+        cur_count = 1
+        for j in range(i + 1, l): 
+            if guess is not None:
+                if (str[i] != str[j] or str[j] != guess):
+                        break
+            else:
+                if (str[i] != str[j]):
+                        break
+            cur_count += 1
+  
+        # Update result if required 
+        if cur_count > count : 
+            count = cur_count 
+            res = str[i] 
+    return(res,count)
   
 def MatLoader(file,**kwargs):
     cprint('=-=-=-=-=-=-=-=-=-=-=- Running: MatLoader -=-=-=-=-=-=-=-=-=-=-=',mt = 'funct')
     
     kwargdict = {'txt':'txt','textfile':'txt',
                  'dir':'path','directory':'path','path':'path','p':'path',
-                 'tf':'tf','txtfile':'tf'}
+                 'tf':'tf','txtfile':'tf',
+                 'esc':'esc','escape_character':'esc','e':'esc','esc_char':'esc'}
     class kw:
         txt  = False
         path = 'same'
         tf   = None 
+        esc  = None
     for kwarg in kwargs:
         try:
             setattr(kw,kwargdict[kwarg], kwargs.get(kwarg,None))
@@ -418,17 +466,60 @@ def MatLoader(file,**kwargs):
                 data[field] = data[field][0]
                 cprint(['corrected','data['+str(field)+'].shape','from',str(oldshape),'to',str(data[field].shape)],mt=['note','status','note','wrn','note','status'])
     
+    mname = file.split('\\')[-1]
+    data['matfilepath'] = file
+    data['matname'] = mname
     #.txt File Loading
     if kw.txt == True:
-        #Get_FileList()
-        mname = file.split('\\')[-1]
-        data['matname'] = mname
+        
         fname = mname.split('.')[0]
         if kw.tf == None and kw.path == 'same':
             path = os.path.dirname(file)
-        txtlist = Get_FileList(path, ext='.txt')
+        txtlp = Get_FileList(path, ext='.txt',pathtype='abs')[0]
+
+        txtind = [i for i, s in enumerate(txtlp['.txt']) if (s.split('\\')[-1]).split('.')[0] in fname]
+        data['txtfilepath'] = txtlp['.txt'][txtind[0]]
+        data['txtname'] = data['txtfilepath'].split('\\')[-1]
+        d = []
         
+        #determine escape character if none is given
         
+        with open(data['txtfilepath'],'r') as source:
+            line1 = source.readline()
+            skipline1 = False
+            if len(line1)<=1:
+                line1 = source.readline()
+                skipline1 = True
+            if kw.esc == None or kw.esc not in line1:
+                if '\t' not in line1:
+                    numspc = maxRepeating(line1,guess=' ')
+                    kw.esc = "".join([numspc[0] for i in range(numspc[1])])
+                                    
+                else:
+                    kw.esc = '\t'
+        
+        with open(data['txtfilepath'],'r') as source:
+            if skipline1 == True:
+                source.readline()
+                
+            for line in source:
+                line = line.strip('\n')
+                fields = line.split(kw.esc)
+                d.append(fields)  
+        if len(d[-1]) < len(d[0]):
+            d.pop(-1)
+        try:
+            float(d[0][1])
+            FieldI = 0
+            VarI   = 1
+        except:
+            FieldI = 1
+            VarI   = 0
+            
+        for ent in d:
+            ent[VarI] = float(ent[VarI])
+            data[ent[FieldI]] = float(ent[VarI])
+        cprint(['Loaded auxilary variables from file =',data['txtfilepath'], 'successfully!\n','Added:',str(d)],mt=['note','stat','note','note','stat'])
 
         
     tranconf = 0
