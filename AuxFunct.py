@@ -398,7 +398,7 @@ def maxRepeating(str, **kwargs):
 
     Returns
     -------
-    res,coount
+    res,count
     Character and total number consecutive
 
     """
