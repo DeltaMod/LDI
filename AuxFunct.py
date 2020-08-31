@@ -271,7 +271,8 @@ def DataDir(**kwargs):
     """
     Function to handle loading new data from other directories - should be expanded to support an infinitely large list of directories, by appending new data to the file.
     
-    """
+    """ 
+    
     kwargdict = {'a':'act','act':'act','action':'act',
                  'd':'directory','dir':'directory','directory':'directory'}
     
@@ -279,6 +280,23 @@ def DataDir(**kwargs):
                  'd':'delete','del':'delete','delete':'delete',
                  'l':'load','load':'load',
                  'dupl':'dupes','dupes':'dupes','duplocates':'duplicates'}
+    
+    
+    if len(kwargs) == 0:
+        
+        kw_keys  = np.unique(list(kwargdict.values()))
+        act_keys = np.unique(list(actdict.values()))
+        act_keydict    = {}
+        for i in range(len(act_keys)):    
+            act_keydict[i]    = act_keys[i] 
+        kwText   = ":".join(['List of Actions']+[str(i)+' : '+ act_keys[i] for i in range(len(act_keys))]+['INPUT SELECTION']).split(':')
+        kwjc     = [':\n']+list(np.concatenate([[':']+['\n'] for i in range(int((len(kwText)-1)/2)) ]))+[':']
+        kwFull   = np.concatenate([[kwText[i]]+[kwjc[i]] for i in range(len(kwjc))])
+        kwmt     = ['note']+['note']+list(np.concatenate([['stat']+['wrn']+['stat']+['stat'] for i in range(len(act_keys)) ]))+['curio']+['curio']
+        kwID = input(cprint(kwFull,mt=kwmt,tr=True))
+        
+        kwargs = {'act':act_keydict[int(kwID)]}
+
     
     class kw:
         act   = False
@@ -308,7 +326,10 @@ def DataDir(**kwargs):
         WARNING! askdirectory gives out the wrong format 
         """
         DirDict[str(1+len(DirDict))] = file_path
-        jsonhandler(f = kw.ddir,d=DirDict,pt='abs', a='w')
+        if file_path != '':
+            jsonhandler(f = kw.ddir,d=DirDict,pt='abs', a='w')
+        else:
+            cprint('No file selected, aborting!',mt='err')
     
     if kw.act == 'delete':
         listdel  = ['Select a data directory to delete:\n']
@@ -328,7 +349,12 @@ def DataDir(**kwargs):
             cprint('Non integer string entered! No fields will be deleted!',mt='err')
         if type(index) == int:
             DirDict.pop(DDI[index][0])
-            jsonhandler(f = kw.ddir,d=DirDict,pt='abs', a='w')
+            DDI = list(DirDict.items())
+            NewDict  = {}
+            for i in range(len(DDI)):
+                NewDict[i]  = DDI[i][1]
+                
+            jsonhandler(f = kw.ddir,d=NewDict,pt='abs', a='w')
             
             cprint(['Deleted ', '{'+str(DDI[index][0]),' : ',DDI[index][1],'}', ' from directory list file'],mt = ['note','wrn','note','stat','wrn','note'])
         
