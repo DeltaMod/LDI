@@ -14,7 +14,7 @@ import h5py
 import hdf5storage
 import matplotlib
 import tkinter as tk
-from tkinter.filedialog import askopenfilename
+from tkinter.filedialog import askopenfilename, askdirectory
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d #If you want to be able to use projection="3D", then you need this:
@@ -59,7 +59,7 @@ def cprint(String,**kwargs):
     style_str = kwargs.get('ts',None)
     SC_str    = kwargs.get('sc',None)
     jc_str    = kwargs.get('jc',' ')
-    tg_bool   = kwargs.get('tg',False)
+    tr_bool   = kwargs.get('tr',False)
     co_bool   = kwargs.get('co',False)
     
     #We convert all of these to lists to make sure that we can give the software strings or lists without any problems
@@ -179,7 +179,7 @@ def cprint(String,**kwargs):
    
         PRINTSTR.append(STARTCODE+String[i]+EXITCODE+jc_str[i])
     if co_bool == False:     
-        if tg_bool == False:
+        if tr_bool == False:
             print(''.join(PRINTSTR))
         else:
             return(''.join(PRINTSTR))
@@ -215,7 +215,8 @@ def PathSet(filename,**kwargs):
     elif P.pathtype in ['rel','relative']:
         WorkDir = os.getcwd()+'\\'
 
-        
+    if filename == None:
+        filename = ''
     return(WorkDir+filename)
 
 #%%
@@ -266,6 +267,75 @@ def jsonhandler(**kwargs):
                 cprint('Data does not exist! Remember to enter d/dat/data = dict',mt='err')
     else:
         cprint('No filename given! Cannot read or write to json file!',mt='err')
+def DataDir(**kwargs):
+    """
+    Function to handle loading new data from other directories - should be expanded to support an infinitely large list of directories, by appending new data to the file.
+    
+    """
+    kwargdict = {'a':'act','act':'act','action':'act',
+                 'd':'directory','dir':'directory','directory':'directory'}
+    
+    actdict =   {'a':'add','add':'add','addfile':'add',
+                 'd':'delete','del':'delete','delete':'delete',
+                 'l':'load','load':'load',
+                 'dupl':'dupes','dupes':'dupes','duplocates':'duplicates'}
+    
+    class kw:
+        act   = False
+        ddir  = PathSet('DataDirectories.json',p='rel') #use default data directory file as default location for data directory
+        pass
+    
+    for kwarg in kwargs:
+        try:
+            setattr(kw,kwargdict[kwarg], kwargs.get(kwarg,False))
+            
+        except:
+            cprint(['kwarg =',kwarg,'does not exist!',' Skipping kwarg eval.'],mt = ['wrn','err','wrn','note'])
+        
+        try:
+            kw.act = actdict[kw.act]
+        except:
+            cprint(['Note that ',kwarg,' = ',str(kw.act),' does not correspond to an action!',' Skipping kwarg eval.'],mt = ['wrn','err','wrn','note'])
+            
+    DirDict = jsonhandler(f = kw.ddir,pt='abs', a='r')
+    
+    if kw.act == 'add':
+        root = tk.Tk()
+        file_path = askdirectory(title = 'Please select a data directory to append to your data directories list!').replace('/','\\')
+        
+        tk.Tk.withdraw(root)
+        """
+        WARNING! askdirectory gives out the wrong format 
+        """
+        DirDict[str(1+len(DirDict))] = file_path
+        jsonhandler(f = kw.ddir,d=DirDict,pt='abs', a='w')
+    
+    if kw.act == 'delete':
+        listdel  = ['Select a data directory to delete:\n']
+        cplist   = ['note'] 
+        DDI = list(DirDict.items())
+        for i in range(len(DDI)):
+            cplist = cplist + ['wrn','note','stat','stat']
+            listdel = listdel+ [str(i),' : ',DDI[i][1], '\n']
+        cplist = cplist + ['curio']
+        listdel = listdel+['Enter number here: ']
+        
+        IPT = cprint(listdel,mt=cplist,jc='',tr=True)
+        index = input(IPT)
+        try:
+            index = int(index)
+        except:
+            cprint('Non integer string entered! No fields will be deleted!',mt='err')
+        if type(index) == int:
+            DirDict.pop(DDI[index][0])
+            jsonhandler(f = kw.ddir,d=DirDict,pt='abs', a='w')
+            
+            cprint(['Deleted ', '{'+str(DDI[index][0]),' : ',DDI[index][1],'}', ' from directory list file'],mt = ['note','wrn','note','stat','wrn','note'])
+        
+        
+        
+       
+            
     
 def CUV(**kwargs):
     ACTLIST = ['reset','load']
@@ -304,9 +374,13 @@ def CUV(**kwargs):
        
     if action == 'load':
         root = tk.Tk()
-        file_path = askopenfilename()
+        file_path = askopenfilename(title = 'Select a settings file',filetypes=[('json files','*.json'),('All Files','*.*')])
         tk.Tk.withdraw(root)
-        jsonhandler(f = file_path,pt='abs', a='r')
+        
+        if file_path != "":
+            jsonhandler(f = file_path,pt='abs', a='r')
+        else:
+            cprint("Cancelled file loading",mt='note')
         
     if action == 'init':
         DefaultFile = "DataImportSettings.json"
@@ -471,14 +545,15 @@ def MatLoader(file,**kwargs):
         FIELDDICT[k] = np.array(v)
     FIELDLIST = list(FIELDDICT.keys()) 
     data = {}
+    dfields = []
     if '#refs#' in FIELDLIST: 
         FIELDLIST.remove('#refs#')
         cprint(["Scanning fields:"]+FIELDLIST,fg='c',ts='b')
-    if len(FIELDLIST) == 1:
-        dfields = list(f[FIELDLIST[0]].keys())
+    for i in range(len(FIELDLIST)):
+        dfields.append(list(f[FIELDLIST[i]].keys()))
         
-        for field in dfields:
-            data[field] = np.array(f[FIELDLIST[0]][field])
+        for field in dfields[i]:
+            data[field] = np.array(f[FIELDLIST[i]][field])
             if len(data[field].shape) == 2 and data[field].shape[0] == 1:
                 oldshape    = data[field].shape
                 data[field] = data[field][0]
@@ -544,7 +619,7 @@ def MatLoader(file,**kwargs):
     powconf  = 0 
     
     if 'trans' in FIELDLIST[0].lower():
-        cprint('Best guess is that you just loaded the data from a Transfer Box analysis group!', mt = 'curio')
+        cprint('Best guess is that you just loaded the data from a Transfer Box a   nalysis group!', mt = 'curio')
         tranconf = 1
     if any(substring in FIELDLIST[0].lower() for substring in ['pow','pabs']):
         cprint('Best guess is that you just loaded the data from a power absorption analysis group!',mt = 'curio')

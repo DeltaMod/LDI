@@ -25,6 +25,8 @@ from scipy import interpolate
 import json
 from collections import Counter
 import natsort
+from scipy.constants import e
+
 
 from AuxFunct import (Get_FileList,MatLoader,CUV,jsonhandler,cprint,PathSet,AbsPowIntegrator)
 
@@ -33,13 +35,20 @@ plt.rcParams.update({
     "text.usetex": True,
     "font.family": "serif",
     "font.serif": ["CMU"],
+    "font.size": 14,
     "axes.grid.which":'both', 
     "grid.linestyle":'dashed',
     "grid.linewidth":0.6,
     "xtick.minor.visible":True,
     "ytick.minor.visible":True,
+    "figure.figsize":[16/2,9/1.5],
     
 })
+
+plt.rcParams['figure.dpi']         = 100
+plt.rcParams['axes.grid']          = True
+plt.rcParams['axes.axisbelow']     = True
+plt.rcParams['figure.autolayout']  = True 
 
         
     
@@ -48,51 +57,137 @@ plt.rcParams.update({
 UV = CUV(act = 'init')
 UV['Debug'] = False
 #We get a list of all files in dicts matching the number of extensions we are searching for.
-DList,NList = Get_FileList('Data\\12-08-2020-pabs', ext = (('mat','txt')),sorting='numeric')
+# DIR1 = 'Data\\12-08-2020-pabs'; DIRPT = 'rel'
+DIR1 = "Z:\\HDD-PC\\Work\\University Work\\Physics\\PhD Local Storage\\Data\\MD2_NoContacts-24-08-2020"; DIRPT = 'abs'
+DList,NList = Get_FileList(DIR1,pathtype=DIRPT, ext = (('mat','txt')),sorting='numeric')
 
 #%%
 #We probably only want to only load one matfile at a time, because otherwise we're going to quickly run out of memory!
+Dproc = {'AbsPow':[],'enw_x':[],'enw_y':[],'enw_z':[],'s_d':[],'enw_rot':[],'rel_rot':[],'current':[]}
+P_out = 8.4e-15
 
+"""
+0.1 nA    1 nA     10 nA
+0.02 fW     8.4 fW     0.5 pW
+"""
+
+"""
+I am currently thinking about a way of defining the variables in Dproc autmatically...
+"""
 if UV['Debug'] == False:
-    AbsPow = []
+     
     for file in DList['.mat']:
-        MDat,MFi = MatLoader(file,txt=True)    
+        MDat,MFi = MatLoader(file,txt=UV['txtimport'])    
         try:
             MDat['P_abs'] = np.reshape(MDat['Pabs'],[MDat['lambda'].shape[0],MDat['z'].shape[0],MDat['y'].shape[0],MDat['x'].shape[0]])   
             #plt.imshow(np.rot90(MDat['P_abs'][0,:,:,6])) displays the same (xslice for [y,z]) as in lumerical
             cprint(['Now processing file: ',str(file)],mt='curio')
             
             MDat['P_tot'] = AbsPowIntegrator(MDat['P_abs'],MDat['x'],MDat['y'],MDat['z'],MDat['lambda'])
-            AbsPow.append(max(MDat['P_tot']))
+            Dproc['AbsPow'].append(max(MDat['P_tot']))
+            if UV['txtimport'] == True:
+                anw_l = np.array([0,0,MDat['ENW_z']])
+                enw_l = np.array([MDat['ENW_x'],MDat['ENW_y'],MDat['ENW_z']])
+                squared_dist = np.sum((anw_l-enw_l)**2, axis=0)
+                enw_rot = MDat['ENW_z_rot'] 
+                
+                
+                if MDat['ENW_y'] == 0:
+                    atdeg =  0
+                else:
+                    atdeg = np.degrees(np.arctan(abs(MDat['ENW_x']/MDat['ENW_y']))) 
+                
+                rel_rot = enw_rot + atdeg
+                
+                if rel_rot>180:
+                    rel_rot = atdeg - (180 - enw_rot)  
+                
+                #calculating curremt: Assume lambda[0] is max power (it is probably)
+                Dproc['current'] = Dproc['AbsPow'][-1]/e
+                Dproc['s_d'].append(np.sqrt(squared_dist))
+                Dproc['enw_rot'].append(enw_rot)
+                Dproc['enw_x'].append(MDat['ENW_x'] )
+                Dproc['enw_y'].append(MDat['ENW_y'] )
+                Dproc['enw_z'].append(MDat['ENW_z'] )
+                Dproc['rel_rot'].append(rel_rot)
         except:
             None
+    #%%
+    fig1 = plt.figure(1) # This ensures you can plot over the old figure
+    fig1.clf()           # This clears the old figure
     
-    plt.figure(1)
-    plt.plot(AbsPow)
-    plt.grid(True)
-    plt.xlabel('Simulation Number',fontsize=35)
-    plt.ylabel(r'$\frac{P_{abs}}{P_{tot}}$',fontsize=35)
+    #2D plot
+    ax1 = fig1.gca()
+    ax1.set_title('Absorbed Power with Gold Contacts')
+    ax1.set_xlabel('distance from source [m]')
+    ax1.set_ylabel('Power Fraction: '+r'${P_{abs}}/{P_{tot}}$')
+    ax1.grid(True)
+    sca1 = ax1.scatter(Dproc['s_d'],Dproc['AbsPow'],c=Dproc['rel_rot'],cmap='gnuplot')
+    cb1 = fig1.colorbar(sca1)
+    cb1.set_label('Relative Rotation '+r'$[\theta$]')
     
-    plt.plot(AbsPow,'x')
+    #for n in range(0,125,5*5):
+    #    plt.plot(Dproc['s_d'][n],Dproc['AbsPow'][n],'+g')
     
-    for n in range(0,125,5*5):
-        plt.plot(n,AbsPow[n],'+g')
-    
-    for n in range(0,125,5):
-        plt.plot(n,AbsPow[n],'*r')
+   # for n in range(0,125,5):
+    #    plt.plot(Dproc['s_d'][n],Dproc['AbsPow'][n],'*r')
         
     
     
-    MDat,MFi = MatLoader(DList['.mat'][0])
-    MDat['P_abs'] = np.reshape(MDat['Pabs'],[MDat['lambda'].shape[0],MDat['z'].shape[0],MDat['y'].shape[0],MDat['x'].shape[0]])   
-    #plt.imshow(np.rot90(MDat['P_abs'][0,:,:,6])) displays the same (xslice for [y,z]) as in lumerical
+    LComp,LCompFi = MatLoader(DList['.mat'][0])
+    LComp['P_abs'] = np.reshape(LComp['Pabs'],[LComp['lambda'].shape[0],LComp['z'].shape[0],LComp['y'].shape[0],LComp['x'].shape[0]])   
+    #plt.imshow(np.rot90(LComp['P_abs'][0,:,:,6])) displays the same (xslice for [y,z]) as in lumerical
     
-    MDat['P_tot'] = AbsPowIntegrator(MDat['P_abs'],MDat['x'],MDat['y'],MDat['z'],MDat['lambda'])
+    LComp['P_tot'] = AbsPowIntegrator(LComp['P_abs'],LComp['x'],LComp['y'],LComp['z'],LComp['lambda'])
     plt.figure(2)
-    plt.plot(MDat['lambda'],MDat['P_tot'])
+    plt.plot(LComp['lambda'],LComp['P_tot'])
+
+    
 
 
+    #%%
+    PDP = []
+    PDR = []
+    PDL = []
+    PLP = []
+    PLR = []
+    PLL = []
+    TPDP = []
+    TPDL = []
+    TPDR = []
+    
+    for i in range(len(Dproc['AbsPow'])):
+        if Dproc['rel_rot'][i] < 60 or Dproc['rel_rot'][i] > 120:
+            PDP.append(Dproc['AbsPow'][i])
+            PDR.append(Dproc['rel_rot'][i])
+            PDL.append(Dproc['s_d'][i])
+        else:
+            PLP.append(Dproc['AbsPow'][i])
+            PLR.append(Dproc['rel_rot'][i])
+            PLL.append(Dproc['s_d'][i])
+        if Dproc['rel_rot'][i] < 10 or Dproc['rel_rot'][i] > 170:
+            if Dproc['enw_x'][i] == 0:
+                 TPDP.append(Dproc['AbsPow'][i])
+                 TPDR.append(Dproc['rel_rot'][i])
+                 TPDL.append(Dproc['s_d'][i])
+    
+        
+    fig3 = plt.figure(3) # This ensures you can plot over the old figure
+    fig3.clf()           # This clears the old figure
+    
+    #2D plot
+    ax3 = fig3.gca()
+    ax3.set_title('Absorbed Power with Gold Contacts')
+    ax3.set_xlabel('distance from source [m]')
+    ax3.set_ylabel('Power Fraction: '+r'${P_{abs}}/{P_{tot}}$')
+    ax3.grid(True)
+    ax3.scatter(PDL,PDP,c='cyan')
+    sca3 = ax3.scatter(PLL,PLP,c=PLR ,cmap='gnuplot')
+    ax3.scatter(TPDL,TPDP,c='green')
+    cb3 = fig3.colorbar(sca3)
+    cb3.set_label('Relative Rotation '+r'$[\theta$]')
 CUV(act = 'session',data=UV) #Saves user settings after each complete run!
+#%%
 """
 comp = [
 7e-07, 0.00377263,
