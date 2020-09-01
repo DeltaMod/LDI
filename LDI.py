@@ -279,7 +279,7 @@ def DataDir(**kwargs):
     actdict =   {'a':'add','add':'add','addfile':'add',
                  'd':'delete','del':'delete','delete':'delete',
                  'l':'load','load':'load',
-                 'dupl':'dupes','dupes':'dupes','duplocates':'duplicates',
+                 'dupl':'dupes','dupes':'dupes','duplicates':'duplicates',
                  'list':'list','lst':'list','show':'list'}
       
     if len(kwargs) == 0:
