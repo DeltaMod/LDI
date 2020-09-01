@@ -279,7 +279,8 @@ def DataDir(**kwargs):
     actdict =   {'a':'add','add':'add','addfile':'add',
                  'd':'delete','del':'delete','delete':'delete',
                  'l':'load','load':'load',
-                 'dupl':'dupes','dupes':'dupes','duplocates':'duplicates'}
+                 'dupl':'dupes','dupes':'dupes','duplocates':'duplicates',
+                 'list':'list','lst':'list','show':'list'}
       
     if len(kwargs) == 0:
         
@@ -338,6 +339,16 @@ def DataDir(**kwargs):
             jsonhandler(f = kw.ddir,d=DirDict,pt='abs', a='w')
         else:
             cprint('No file selected, aborting!',mt='err')
+    def NewDict(Dict):
+        NewDict  = {}
+        if type(Dict) == dict:
+            Dict = list(Dict.items())
+        elif type(Dict) == list:
+            pass
+            
+        for i in range(len(Dict)):
+            NewDict[i]  = Dict[i][1]
+        return(NewDict)
     
     if kw.act == 'delete':
         listdel  = ['Select a data directory to delete:\n']
@@ -357,16 +368,48 @@ def DataDir(**kwargs):
             cprint('Non integer string entered! No fields will be deleted!',mt='err')
         if type(index) == int:
             DirDict.pop(DDI[index][0])
-            DDI = list(DirDict.items())
-            NewDict  = {}
-            for i in range(len(DDI)):
-                NewDict[i]  = DDI[i][1]
+            DirDict = NewDict(DirDict)
                 
-            jsonhandler(f = kw.ddir,d=NewDict,pt='abs', a='w')
+            jsonhandler(f = kw.ddir,d=DirDict,pt='abs', a='w')
             
             cprint(['Deleted ', '{'+str(DDI[index][0]),' : ',DDI[index][1],'}', ' from directory list file'],mt = ['note','wrn','note','stat','wrn','note'])
+            
+    if kw.act == 'dupes':
+        DDK = list(DirDict.keys())
+        DDI = list(DirDict.values())
+        UNQ = np.unique(DDI)
+        if len(DDI) == len(UNQ):
+            cprint('No duplicates found!',mt='note')
+        else:
+            dupeID = []
+            for unique in UNQ:
+                hits = [i for i,val in enumerate(DDI) if val == unique]
+
+                if len(hits) > 1:
+                    dupeID += hits[1:]
+                    
+            print(DirDict)
+            for dID in dupeID:
+                cprint(['Deleting', '{',DDK[dID], ':',DDI[dID],'}','from',kw.ddir],mt = ['note','wrn','curio','wrn','curio','wrn','note','stat'],jc=' ')
+                DirDict.pop(DDK[dID])
+                
+            cprint(['A total of','[',str(len(dupeID)),']','dupes were deleted.'],mt = ['note','wrn','curio','wrn','note'])
+            DirDict = NewDict(DirDict)
+            jsonhandler(f = kw.ddir,d=DirDict,pt='abs', a='w')
+            
         
+    if kw.act == 'list':
+        listshow  = ['List of currently saved directories:\n']
+        cplist   = ['note'] 
+        DDI = list(DirDict.items())
+        for i in range(len(DDI)):
+            cplist = cplist + ['wrn','note','stat','stat']
+            listshow = listshow+ [str(i),' : ',DDI[i][1], '\n']
+        cplist = cplist
+        cprint(listshow,mt=cplist)
         
+    if kw.act == 'load'
+
         
        
             
