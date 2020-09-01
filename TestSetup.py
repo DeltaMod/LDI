@@ -46,7 +46,7 @@ UV = CUV(act = 'init')
 DIR1 = "Directory to your data"; DIRPT = 'abs'
 DList,NList = Get_FileList(DIR1,pathtype=DIRPT, ext = (('.mat','.txt')),sorting='numeric')
 
-Dproc = {data1:[],data2:[]}
+Dproc = {"data1":[],"data2":[]}
 for file in DList['.mat']:
     MDat,MFi = MatLoader(file,txt=UV['txtimport'])  
     MDat['P_abs'] = np.reshape(MDat['Pabs'],[MDat['lambda'].shape[0],MDat['z'].shape[0],MDat['y'].shape[0],MDat['x'].shape[0]])   
