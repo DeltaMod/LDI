@@ -28,7 +28,7 @@ import natsort
 from scipy.constants import e
 
 
-from AuxFunct import (Get_FileList,MatLoader,CUV,jsonhandler,cprint,PathSet,AbsPowIntegrator)
+from LDI import (Get_FileList,MatLoader,CUV,jsonhandler,cprint,PathSet,AbsPowIntegrator)
 
 ## for Palatino and other serif fonts use:
 plt.rcParams.update({

@@ -9,7 +9,7 @@ A small example file on what you would need to do to set up a normal setup for a
 
 #use this to set current directory without running code: os.chdir(os.path.dirname(sys.argv[0]))
 
-from AuxFunct import (Get_FileList,MatLoader,CUV,jsonhandler,cprint,PathSet,AbsPowIntegrator,DataDir)
+from LDI import (Get_FileList,MatLoader,CUV,jsonhandler,cprint,PathSet,AbsPowIntegrator,DataDir)
 # import os
 # import sys
 # import time
