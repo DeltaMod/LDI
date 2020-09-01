@@ -386,7 +386,7 @@ def CUV(**kwargs):
     if action == 'reset':
         cprint('Writing default settings to file',mt='note')
         RFile = "DataImportSettings.json"
-        Default = {'Debug':False,'FileLoad':True,'AltFile':None,'DefaultFile':RFile,'ConsoleOutput':True}
+        Default = {'Debug':False,'FileLoad':True,'AltFile':None,'DefaultFile':RFile,'ConsoleOutput':True,"txtimport" : True}
         jsonhandler(f = Default['DefaultFile'],pt=pathtype,d = Default,a='w')
         return(jsonhandler(f=RFile,pt=pathtype,a='r'))
     

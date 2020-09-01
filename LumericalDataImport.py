@@ -186,6 +186,7 @@ if UV['Debug'] == False:
     ax3.scatter(TPDL,TPDP,c='green')
     cb3 = fig3.colorbar(sca3)
     cb3.set_label('Relative Rotation '+r'$[\theta$]')
+
 CUV(act = 'session',data=UV) #Saves user settings after each complete run!
 #%%
 """
