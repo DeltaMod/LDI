@@ -408,16 +408,26 @@ def DataDir(**kwargs):
         cplist = cplist
         cprint(listshow,mt=cplist)
         
-    if kw.act == 'load'
+    if kw.act == 'load':
+        pass
 
         
        
             
     
 def CUV(**kwargs):
-    ACTLIST = ['reset','load']
+    ACTLIST = ['reset','load','get','set']
     action   = kwargs.get('act',None)
     data     = kwargs.get('data',None)
+    
+    #list all acceptable "get/set" inputs - consider using .lower() in the future to remove duplicates/case sensitivity
+    getdict = {'debug':'Debug','Debug':'Debug',
+               'FL':'File_Load','File_Load':'File_Load','fileload':'File_Load','file_load':'File_Load',
+               'DF':'Default_File','default':'Default_File','default_file':'Default_File','Default_File':'Default_File',
+               'DDF':'Data_Directories_File','data_directories_file':'Data_Directories_File','data_directory':'Data_Directories_File','ddf':'Data_Directories_File',
+               'console':'Console_Output','CO':'Console_Output','Console_Output':'Console_Output',
+               'txt':'txt_import','text_import':'txt_import','TI':'txt_import'}
+    
     pathtype = kwargs.get('pt','rel')
     
     if len(kwargs) == 0:
@@ -429,24 +439,24 @@ def CUV(**kwargs):
     if action == 'reset':
         cprint('Writing default settings to file',mt='note')
         RFile = "DataImportSettings.json"
-        Default = {'Debug':False,'FileLoad':True,'AltFile':None,'DefaultFile':RFile,'ConsoleOutput':True,"txtimport" : True}
-        jsonhandler(f = Default['DefaultFile'],pt=pathtype,d = Default,a='w')
+        Default = {"Debug": True, "File_Load": True, "Alt_File": None, "Default_File": RFile,"Data_Directories_File":"DataDirectories.json", "Console_Output": True, "txt_import": True}    
+        jsonhandler(f = Default['Default_File'],pt=pathtype,d = Default,a='w')
         return(jsonhandler(f=RFile,pt=pathtype,a='r'))
     
     if action == 'session':
         RFile = "DataImportSettings.json"
         ddata = jsonhandler(f = RFile,pt=pathtype,a='r')
-        if ddata['AltFile'] is not None:
+        if ddata['Alt_File'] is not None:
             try:
-                cprint(['Saving user set settings to path = ',ddata['AltFile']],mt=['note','stat'])
-                jsonhandler(f = ddata['AltFile'],pt=pathtype, d = data, a='w')
+                cprint(['Saving user set settings to path = ',ddata['Alt_File']],mt=['note','stat'])
+                jsonhandler(f = ddata['Alt_File'],pt=pathtype, d = data, a='w')
                 
             except:
-                cprint(['Altfile failed, setting user set settings to path = ',ddata['DefaultFile']],mt=['wrn','stat'])
-                jsonhandler(f = ddata['DefaultFile'],pt=pathtype, d = data, a='w')
+                cprint(['Alt_File failed, setting user set settings to path = ',ddata['Default_File']],mt=['wrn','stat'])
+                jsonhandler(f = ddata['Default_File'],pt=pathtype, d = data, a='w')
         else:
-            cprint(['Writing current user settings to path = ',PathSet(ddata['DefaultFile'],pt=pathtype)],mt=['note','stat'])
-            jsonhandler(f = ddata['DefaultFile'],pt=pathtype, d = data, a='w')  
+            cprint(['Writing current user settings to path = ',PathSet(ddata['Default_File'],pt=pathtype)],mt=['note','stat'])
+            jsonhandler(f = ddata['Default_File'],pt=pathtype, d = data, a='w')  
 
        
     if action == 'load':
@@ -462,10 +472,10 @@ def CUV(**kwargs):
     if action == 'init':
         DefaultFile = "DataImportSettings.json"
         ddata = jsonhandler(f = DefaultFile,a='r')
-        if ddata['AltFile'] is not None:
+        if ddata['Alt_File'] is not None:
             try:
-                data = jsonhandler(f = ddata['AltFile'],a='r')
-                cprint(['Loading user set settings from path = ',ddata['AltFile']],mt=['note','stat'])
+                data = jsonhandler(f = ddata['Alt_File'],a='r')
+                cprint(['Loading user set settings from path = ',ddata['Alt_File']],mt=['note','stat'])
                 return(data)
             except:
                 cprint(['Failed to load alt user settings file, using defaults instead'],mt=['err'])
@@ -474,7 +484,7 @@ def CUV(**kwargs):
             cprint(['Initialising with last session user settings'],mt=['note'])
             return(ddata)
         
-        return(jsonhandler(f=ddata['DefaultFile'],a='r'))
+        return(jsonhandler(f=ddata['Default_File'],a='r'))
     
 def Get_FileList(path,**kwargs):
     """
