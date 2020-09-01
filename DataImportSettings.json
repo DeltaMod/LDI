@@ -1,1 +1,1 @@
-{"Debug": false, "FileLoad": true, "AltFile": null, "DefaultFile": "DataImportSettings.json", "ConsoleOutput": true, "txtimport": true}
+{"Debug": false, "FileLoad": true, "AltFile": null, "DefaultFile": "DataImportSettings.json", "ConsoleOutput": true, "txtimport": true,"DataDirectoryFile":"DataDirectories.json"}

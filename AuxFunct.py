@@ -280,8 +280,7 @@ def DataDir(**kwargs):
                  'd':'delete','del':'delete','delete':'delete',
                  'l':'load','load':'load',
                  'dupl':'dupes','dupes':'dupes','duplocates':'duplicates'}
-    
-    
+      
     if len(kwargs) == 0:
         
         kw_keys  = np.unique(list(kwargdict.values()))
@@ -296,8 +295,15 @@ def DataDir(**kwargs):
         kwID = input(cprint(kwFull,mt=kwmt,tr=True))
         
         kwargs = {'act':act_keydict[int(kwID)]}
-
-    
+        
+        dID  = {input(cprint(['Do you want to set a custom directories file?', '[y/n]:'],mt = ['note','curio'],jc=['\n',''],tr = True)):True}
+        
+        if dID.get('y',False) == True:
+            root = tk.Tk()
+            file_path = tk.filedialog.asksaveasfilename(title = 'Select/write filename for your data directories list!',defaultextension='*.*',filetypes=[('json files','*.json'),('All Files','*.*')]).replace('/','\\')    
+            tk.Tk.withdraw(root)
+            kwargs['dir'] =  file_path
+            
     class kw:
         act   = False
         ddir  = PathSet('DataDirectories.json',p='rel') #use default data directory file as default location for data directory
@@ -314,7 +320,9 @@ def DataDir(**kwargs):
             kw.act = actdict[kw.act]
         except:
             cprint(['Note that ',kwarg,' = ',str(kw.act),' does not correspond to an action!',' Skipping kwarg eval.'],mt = ['wrn','err','wrn','note'])
-            
+    #Check if file exists, else write an empty file:
+    if os.path.isfile(kw.ddir) == False:
+            jsonhandler(f = kw.ddir,d={},pt='abs',a='w')    
     DirDict = jsonhandler(f = kw.ddir,pt='abs', a='r')
     
     if kw.act == 'add':
