@@ -275,9 +275,7 @@ def DataDir(**kwargs):
     Note: to change currently active data-dir, you need to select a new file in CUV. I'm going to set up a function that allows you to both select a file, and to make a new one! 
     
     What to do here? I'm saving a file with directories, and I'm giving an option to set the save location in a different directory, isn't that a bit much?
-    Maybe I should just have the option in CUV to select a new DataDirectories file, and let this one only pull the directory from CUV? The problem comes when I want to
-    load a new directories file using DataDir(act='load'), how do I update CUV without CUV(act = 'session') overwriting it with locally set variables? It would need to be 
-    done using CUV, and let this function grab CUV from default settings. 
+    Maybe I should just have the option in CUV to select a new DataDirectories file, and let this one only pull the directory from CUV?
     
     Current implementation:
         UVAR = CUV(act='init') means UVAR now contains all your variables, and to save you would do CUV(d=UVAR,act = 'session'), which keeps all changes and additions you made to UVAR.
@@ -286,7 +284,7 @@ def DataDir(**kwargs):
         UVAR['Data_Directories_File']. 
         
         How do you make sure that UVAR is updated properly? 
-        Either you can make it so that each call of CUV actually returns the dictionary of the latest appended file, so that you can load the correct stuff each time?
+        Current solution is to give a cprint call telling you to load UVAR again if you make this change, or to return the newly edited file with the function...
     """ 
     
     kwargdict = {'a':'act','act':'act','action':'act'}
@@ -436,14 +434,52 @@ def DataDir(**kwargs):
         pass
 
         
-       
+def MultChoiceCom(**kwargs):
+    pass
+
+def KwargEval(fkwargs,kwclass,kwargdict,**kwargs):
+    """
+    A short function that handles kwarg assignment and definition using the same kwargdict as before. To preassign values in the kw.class, you use the kwargs at the end
+    use: provide the kwargs fed to the function as fkwargs, then give a kwarg dictionary. 
+    
+    Example:
+        
+        kw = KwargEval(kwargs,kwargdict,pathtype='rel',)
+    """
+    for kwarg in fkwargs:
+        fkval = fkwargs.get(kwarg,False)
+        try:
+            setattr(kwclass,kwargdict[kwarg.lower()], fkval)
+            
+        except:
+            cprint(['kwarg =',kwarg,'does not exist!',' Skipping kwarg eval.'],mt = ['wrn','err','wrn','note'])
+    return(kwclass)
+    
             
     
 def CUV(**kwargs):
+    kwargdict = {'act':'act','action':'act','a':'act',
+                 'co':'co','console':'co','console out':'console',
+                 'path':'pathtype','pathtype':'pathtype','pt':'pathtype'}
+    
+    actdict = {'reset':'reset','r':'reset','res':'reset',
+               'l':'load','load':'load',
+               'i':'init','init':'init','initialise':'init',
+               'sesh':'session','save session':'session','session':'session',
+               'ddir':'ddir','data dir':'ddir','directories':'ddir'}
+    class kw:
+        pathtype = 'rel'
+        co       = True
+        data     = None
+
+    kw =  KwargEval(kwargs,kw,kwargdict)
+
+    try:
+        kw.act = actdict[kw.act]
+    except:
+        cprint(['Note that ',kwarg,' = ',str(kw.act),' does not correspond to an action!',' Skipping kwarg eval.'],mt = ['wrn','err','wrn','note'])
+    
     ACTLIST = ['reset','load','init']
-    action   = kwargs.get('act',None)
-    data     = kwargs.get('data',None)
-    Con_out  = kwargs.get('CO',True) #Temporary - will homogonise commands later!
     #list all acceptable "get/set" inputs - consider using .lower() in the future to remove duplicates/case sensitivity - I think, however, we won't do this! 
     #Instead, import to variable using init or load - change that variable - then save using session.
     getdict = {'debug':'Debug','Debug':'Debug',
@@ -453,38 +489,37 @@ def CUV(**kwargs):
                'console':'Console_Output','CO':'Console_Output','Console_Output':'Console_Output',
                'txt':'txt_import','text_import':'txt_import','TI':'txt_import'}
     
-    pathtype = kwargs.get('pt','rel')
     
     if len(kwargs) == 0:
-        action = str(input(cprint(['Please enter one of the following actions',' [', ",".join(ACTLIST),']'],mt=['note','stat'],tg=True)))
-        if action not in ['reset','load']:
-           cprint('Ignoring command, you did not select a valid entry',mt='err',co=Con_out)
+        kw.act = str(input(cprint(['Please enter one of the following actions',' [', ",".join(ACTLIST),']'],mt=['note','stat'],tg=True)))
+        if kw.act not in ['reset','load']:
+           cprint('Ignoring command, you did not select a valid entry',mt='err',co=kw.co)
     
     
-    if action == 'reset':
-        cprint('Writing default settings to file',mt='note',co=Con_out)
+    if kw.act == 'reset':
+        cprint('Writing default settings to file',mt='note',co=kw.co)
         RFile = "DataImportSettings.json"
         Default = {"Debug": True, "File_Load": True, "Alt_File": None, "Default_File": RFile,"Data_Directories_File":"DataDirectories.json", "Console_Output": True, "txt_import": True}    
-        jsonhandler(f = Default['Default_File'],pt=pathtype,d = Default,a='w')
-        return(jsonhandler(f=RFile,pt=pathtype,a='r'))
+        jsonhandler(f = Default['Default_File'],pt=kw.pathtype,d = Default,a='w')
+        return(jsonhandler(f=RFile,pt=kw.pathtype,a='r'))
     
-    if action == 'session':
+    if kw.act == 'session':
         RFile = "DataImportSettings.json"
-        ddata = jsonhandler(f = RFile,pt=pathtype,a='r')
+        ddata = jsonhandler(f = RFile,pt=kw.pathtype,a='r')
         if ddata['Alt_File'] is not None:
             try:
-                cprint(['Saving user set settings to path = ',ddata['Alt_File']],mt=['note','stat'],co=Con_out)
-                jsonhandler(f = ddata['Alt_File'],pt=pathtype, d = data, a='w')
+                cprint(['Saving user set settings to path = ',ddata['Alt_File']],mt=['note','stat'],co=kw.co)
+                jsonhandler(f = ddata['Alt_File'],pt=kw.pathtype, d = kw.data, a='w')
                 
             except:
-                cprint(['Alt_File failed, setting user set settings to path = ',ddata['Default_File']],mt=['wrn','stat'],co=Con_out)
-                jsonhandler(f = ddata['Default_File'],pt=pathtype, d = data, a='w')
+                cprint(['Alt_File failed, setting user set settings to path = ',ddata['Default_File']],mt=['wrn','stat'],co=kw.co)
+                jsonhandler(f = ddata['Default_File'],pt=kw.pathtype, d = kw.data, a='w')
         else:
-            cprint(['Writing current user settings to path = ',PathSet(ddata['Default_File'],pt=pathtype)],mt=['note','stat'],co=Con_out)
-            jsonhandler(f = ddata['Default_File'],pt=pathtype, d = data, a='w')  
+            cprint(['Writing current user settings to path = ',PathSet(ddata['Default_File'],pt=kw.pathtype)],mt=['note','stat'],co=kw.co)
+            jsonhandler(f = ddata['Default_File'],pt=kw.pathtype, d = kw.data, a='w')  
 
        
-    if action == 'load':
+    if kw.act == 'load':
         root = tk.Tk()
         file_path = askopenfilename(title = 'Select a settings file',filetypes=[('json files','*.json'),('All Files','*.*')])
         tk.Tk.withdraw(root)
@@ -492,21 +527,21 @@ def CUV(**kwargs):
         if file_path != "":
             jsonhandler(f = file_path,pt='abs', a='r')
         else:
-            cprint("Cancelled file loading",mt='note',co=Con_out)
+            cprint("Cancelled file loading",mt='note',co=kw.co)
         
-    if action == 'init':
+    if kw.act == 'init':
         DefaultFile = "DataImportSettings.json"
         ddata = jsonhandler(f = DefaultFile,a='r')
         if ddata['Alt_File'] is not None:
             try:
-                data = jsonhandler(f = ddata['Alt_File'],a='r')
-                cprint(['Loading user set settings from path = ',ddata['Alt_File']],mt=['note','stat'],co=Con_out)
-                return(data)
+                kw.data = jsonhandler(f = ddata['Alt_File'],a='r')
+                cprint(['Loading user set settings from path = ',ddata['Alt_File']],mt=['note','stat'],co=kw.co)
+                return(kw.data)
             except:
-                cprint(['Failed to load alt user settings file, using defaults instead'],mt=['err'],co=Con_out)
+                cprint(['Failed to load alt user settings file, using defaults instead'],mt=['err'],co=kw.co)
                 return(ddata)
         else:
-            cprint(['Initialising with last session user settings'],mt=['note'],co=Con_out)
+            cprint(['Initialising with last session user settings'],mt=['note'],co=kw.co)
             return(ddata)
         
         return(jsonhandler(f=ddata['Default_File'],a='r'))
