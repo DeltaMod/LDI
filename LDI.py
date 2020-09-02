@@ -30,6 +30,7 @@ import natsort
     
 def cprint(String,**kwargs):
     """
+    WARNING: The format of this script's kwarg importing is severely different from all other functions in this sheet - consider revising to make use instead of the kwargdict and assigning variables through that!
     Note that some light colour variations do not work on all terminals! To get light colours on style-inedpendent terminals, you can use ts = bold!
     kwargs:
     
@@ -60,7 +61,7 @@ def cprint(String,**kwargs):
     SC_str    = kwargs.get('sc',None)
     jc_str    = kwargs.get('jc',' ')
     tr_bool   = kwargs.get('tr',False)
-    co_bool   = kwargs.get('co',False)
+    co_bool   = kwargs.get('co',True)
     
     #We convert all of these to lists to make sure that we can give the software strings or lists without any problems
     if type(String) == str:
@@ -178,7 +179,7 @@ def cprint(String,**kwargs):
                 cprint(['Message preset', 'mt = '+str(msgtype[i]),'does not exist. Printing normal text instead!'],mt = ['wrn','err','wrn'])
    
         PRINTSTR.append(STARTCODE+String[i]+EXITCODE+jc_str[i])
-    if co_bool == False:     
+    if co_bool == True:     
         if tr_bool == False:
             print(''.join(PRINTSTR))
         else:
@@ -242,43 +243,56 @@ def jsonhandler(**kwargs):
                  'd':'data','dat':'data','data':'data',
                  'a':'action','act':'action','action':'action',
                  'p':'pathtype','pt':'pathtype','pathtype':'pathtype'}
-    class j:
+    class kw:
         pathtype = 'rel'
         pass
         
     for kwarg in kwargs:
         try:
-            setattr(j,kwargdict[kwarg], kwargs.get(kwarg,None))
+            setattr(kw,kwargdict[kwarg], kwargs.get(kwarg,None))
         except:
             cprint(['kwarg =',kwarg,'does not exist!',' Skipping kwarg eval.'],mt = ['wrn','err','wrn','note'])
    
-    if hasattr(j,"filename") and hasattr(j,"action") == True:    
-        if j.action in ['read','r']:
-            with open(PathSet(j.filename,pt=j.pathtype),'r') as fread:
+    if hasattr(kw,"filename") and hasattr(kw,"action") == True:    
+        if kw.action in ['read','r']:
+            with open(PathSet(kw.filename,pt=kw.pathtype),'r') as fread:
                 data = json.load(fread)
                 return(data)
             
-        elif j.action in ['write','w']:
+        elif kw.action in ['write','w']:
             try:
-                with open(PathSet(j.filename,pt=j.pathtype),'w') as outfile:
-                    cprint(['saved',str(j.data),'to',str(outfile)],mt=['note','stat','note','stat'])
-                    json.dump(j.data,outfile)
+                with open(PathSet(kw.filename,pt=kw.pathtype),'w') as outfile:
+                    cprint(['saved',str(kw.data),'to',str(outfile)],mt=['note','stat','note','stat'])
+                    json.dump(kw.data,outfile)
             except:
                 cprint('Data does not exist! Remember to enter d/dat/data = dict',mt='err')
     else:
         cprint('No filename given! Cannot read or write to json file!',mt='err')
+        
 def DataDir(**kwargs):
     """
     Function to handle loading new data from other directories - should be expanded to support an infinitely large list of directories, by appending new data to the file.
+    Note: to change currently active data-dir, you need to select a new file in CUV. I'm going to set up a function that allows you to both select a file, and to make a new one! 
     
+    What to do here? I'm saving a file with directories, and I'm giving an option to set the save location in a different directory, isn't that a bit much?
+    Maybe I should just have the option in CUV to select a new DataDirectories file, and let this one only pull the directory from CUV? The problem comes when I want to
+    load a new directories file using DataDir(act='load'), how do I update CUV without CUV(act = 'session') overwriting it with locally set variables? It would need to be 
+    done using CUV, and let this function grab CUV from default settings. 
+    
+    Current implementation:
+        UVAR = CUV(act='init') means UVAR now contains all your variables, and to save you would do CUV(d=UVAR,act = 'session'), which keeps all changes and additions you made to UVAR.
+        If you want to add a data directory using DataDir, it too will use CUV(act='init') to load the file, but this does not take into account any changes made in UVAR.
+        Solution: Add CUV(act='data_dir') to add a new empty .json file with a particular name, or to select a previously created data_dir file, and make that file the new 
+        UVAR['Data_Directories_File']. 
+        
+        How do you make sure that UVAR is updated properly? 
+        Either you can make it so that each call of CUV actually returns the dictionary of the latest appended file, so that you can load the correct stuff each time?
     """ 
     
-    kwargdict = {'a':'act','act':'act','action':'act',
-                 'd':'directory','dir':'directory','directory':'directory'}
+    kwargdict = {'a':'act','act':'act','action':'act'}
     
     actdict =   {'a':'add','add':'add','addfile':'add',
                  'd':'delete','del':'delete','delete':'delete',
-                 'l':'load','load':'load',
                  'dupl':'dupes','dupes':'dupes','duplicates':'duplicates',
                  'list':'list','lst':'list','show':'list'}
       
@@ -297,6 +311,8 @@ def DataDir(**kwargs):
         
         kwargs = {'act':act_keydict[int(kwID)]}
         
+        """
+        This is the function call that needs to go into CUV later!
         dID  = {input(cprint(['Do you want to set a custom directories file?', '[y/n]:'],mt = ['note','curio'],jc=['\n',''],tr = True)):True}
         
         if dID.get('y',False) == True:
@@ -304,11 +320,19 @@ def DataDir(**kwargs):
             file_path = tk.filedialog.asksaveasfilename(title = 'Select/write filename for your data directories list!',defaultextension='*.*',filetypes=[('json files','*.json'),('All Files','*.*')]).replace('/','\\')    
             tk.Tk.withdraw(root)
             kwargs['dir'] =  file_path
-            
+        """
+        
     class kw:
         act   = False
-        ddir  = PathSet('DataDirectories.json',p='rel') #use default data directory file as default location for data directory
         pass
+    
+    UV_dir = CUV(act='init',CO=False)['Data_Directories_File']
+    if os.path.isabs(UV_dir) == True:
+        UV_pt = 'abs'
+    else:
+        UV_pt = 'rel'
+    UV_dir = PathSet(UV_dir,p=UV_pt)
+    setattr(kw,'ddir', UV_dir)
     
     for kwarg in kwargs:
         try:
@@ -416,11 +440,12 @@ def DataDir(**kwargs):
             
     
 def CUV(**kwargs):
-    ACTLIST = ['reset','load','get','set']
+    ACTLIST = ['reset','load','init']
     action   = kwargs.get('act',None)
     data     = kwargs.get('data',None)
-    
-    #list all acceptable "get/set" inputs - consider using .lower() in the future to remove duplicates/case sensitivity
+    Con_out  = kwargs.get('CO',True) #Temporary - will homogonise commands later!
+    #list all acceptable "get/set" inputs - consider using .lower() in the future to remove duplicates/case sensitivity - I think, however, we won't do this! 
+    #Instead, import to variable using init or load - change that variable - then save using session.
     getdict = {'debug':'Debug','Debug':'Debug',
                'FL':'File_Load','File_Load':'File_Load','fileload':'File_Load','file_load':'File_Load',
                'DF':'Default_File','default':'Default_File','default_file':'Default_File','Default_File':'Default_File',
@@ -433,11 +458,11 @@ def CUV(**kwargs):
     if len(kwargs) == 0:
         action = str(input(cprint(['Please enter one of the following actions',' [', ",".join(ACTLIST),']'],mt=['note','stat'],tg=True)))
         if action not in ['reset','load']:
-           cprint('Ignoring command, you did not select a valid entry',mt='err')
+           cprint('Ignoring command, you did not select a valid entry',mt='err',co=Con_out)
     
     
     if action == 'reset':
-        cprint('Writing default settings to file',mt='note')
+        cprint('Writing default settings to file',mt='note',co=Con_out)
         RFile = "DataImportSettings.json"
         Default = {"Debug": True, "File_Load": True, "Alt_File": None, "Default_File": RFile,"Data_Directories_File":"DataDirectories.json", "Console_Output": True, "txt_import": True}    
         jsonhandler(f = Default['Default_File'],pt=pathtype,d = Default,a='w')
@@ -448,14 +473,14 @@ def CUV(**kwargs):
         ddata = jsonhandler(f = RFile,pt=pathtype,a='r')
         if ddata['Alt_File'] is not None:
             try:
-                cprint(['Saving user set settings to path = ',ddata['Alt_File']],mt=['note','stat'])
+                cprint(['Saving user set settings to path = ',ddata['Alt_File']],mt=['note','stat'],co=Con_out)
                 jsonhandler(f = ddata['Alt_File'],pt=pathtype, d = data, a='w')
                 
             except:
-                cprint(['Alt_File failed, setting user set settings to path = ',ddata['Default_File']],mt=['wrn','stat'])
+                cprint(['Alt_File failed, setting user set settings to path = ',ddata['Default_File']],mt=['wrn','stat'],co=Con_out)
                 jsonhandler(f = ddata['Default_File'],pt=pathtype, d = data, a='w')
         else:
-            cprint(['Writing current user settings to path = ',PathSet(ddata['Default_File'],pt=pathtype)],mt=['note','stat'])
+            cprint(['Writing current user settings to path = ',PathSet(ddata['Default_File'],pt=pathtype)],mt=['note','stat'],co=Con_out)
             jsonhandler(f = ddata['Default_File'],pt=pathtype, d = data, a='w')  
 
        
@@ -467,7 +492,7 @@ def CUV(**kwargs):
         if file_path != "":
             jsonhandler(f = file_path,pt='abs', a='r')
         else:
-            cprint("Cancelled file loading",mt='note')
+            cprint("Cancelled file loading",mt='note',co=Con_out)
         
     if action == 'init':
         DefaultFile = "DataImportSettings.json"
@@ -475,13 +500,13 @@ def CUV(**kwargs):
         if ddata['Alt_File'] is not None:
             try:
                 data = jsonhandler(f = ddata['Alt_File'],a='r')
-                cprint(['Loading user set settings from path = ',ddata['Alt_File']],mt=['note','stat'])
+                cprint(['Loading user set settings from path = ',ddata['Alt_File']],mt=['note','stat'],co=Con_out)
                 return(data)
             except:
-                cprint(['Failed to load alt user settings file, using defaults instead'],mt=['err'])
+                cprint(['Failed to load alt user settings file, using defaults instead'],mt=['err'],co=Con_out)
                 return(ddata)
         else:
-            cprint(['Initialising with last session user settings'],mt=['note'])
+            cprint(['Initialising with last session user settings'],mt=['note'],co=Con_out)
             return(ddata)
         
         return(jsonhandler(f=ddata['Default_File'],a='r'))
