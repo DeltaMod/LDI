@@ -36,9 +36,6 @@ Init_LDI()
 #every consecutive time, run: 
 UV = CUV(act = 'init')
 
-#run one time (when it is done! So, not yet)
-#DataDir(act='add')
-
 #run every consective time:
 #Ddir = DataDir(act='load',index = 0)
     

@@ -309,7 +309,29 @@ def jsonhandler(**kwargs):
                 cprint('Data does not exist! Remember to enter d/dat/data = dict',mt='err')
     else:
         cprint('No filename given! Cannot read or write to json file!',mt='err')
-        
+
+def Rel_Checker(path):
+    """
+    Simple function that checks if a file location is relative to the working directory, and if so - replaces the file directory with a relative coordinate version.
+    Returns: (path,pt). So, relative (path) (if found to be relative), and path type (pt) just in case
+    """
+    #First, we check if the current working directory is actually correct!
+    DIS  = "DataImportSettings.json"
+    Ddir = "DataDirectories.json"
+    if os.path.isfile(PathSet(DIS, pt = 'rel')) and os.path.isfile(PathSet(Ddir,pt='rel')) == True:
+        WorkDir = os.getcwd()+'\\'
+        if os.path.isabs(path) == True:
+            if WorkDir in path:
+                path = path.replace(WorkDir,'')
+                pt = 'rel'
+            else:
+                pt = 'abs'
+        else:
+            pt = 'rel'
+        return(path,pt)
+    else:
+        cprint(['One of the required ',DIS,' or ',Ddir,' files are missing! Consider running ','Init_LDI()',' again before continuing!'],mt=['wrn','err','wrn','err','wrn','curio','wrn'])
+
 def DataDir(**kwargs):
     """
     Function to handle loading new data from other directories - should be expanded to support an infinitely large list of directories, by appending new data to the file.
@@ -362,11 +384,8 @@ def DataDir(**kwargs):
         """
     kw = KwargEval(kwargs, kwargdict, act=False)    
     
-    UV_dir = CUV(act='init',CO=False)['Data_Directories_File']
-    if os.path.isabs(UV_dir) == True:
-        UV_pt = 'abs'
-    else:
-        UV_pt = 'rel'
+    UV_dir = CUV(act='init',co=False)['Data_Directories_File']
+    UV_dir,UV_pt = Rel_Checker(UV_dir)
     UV_dir = PathSet(UV_dir,p=UV_pt)
     setattr(kw,'ddir', UV_dir)
     
@@ -394,6 +413,7 @@ def DataDir(**kwargs):
             jsonhandler(f = kw.ddir,d=DirDict,pt='abs', a='w')
         else:
             cprint('No file selected, aborting!',mt='err')
+
     def NewDict(Dict):
         NewDict  = {}
         if type(Dict) == dict:
@@ -487,8 +507,7 @@ def CUV(**kwargs):
             
         [co, console, console out]  = Select if console output is set to [True/False]
         [path, pathtype, pt]        = Choose path type preference ['rel','abs']. Selecting 'rel' will save the directory of selected files in using a relative address, but only if it can! It the start of the address does not match the current working directory, absolute address will be used automatically.
-        [data, d, dat]              = Specify DataImportSettings data <type: Dict>. Must be included in act='sesh' and 'save' (when implemented), but is ignored otherwise. 
-        
+        [data, dat, d]              = Specify DataImportSettings data <type: Dict>. Must be included in act='sesh' and 'save' (when implemented), but is ignored otherwise. 
 
     Returns 
     -------
@@ -498,22 +517,27 @@ def CUV(**kwargs):
     kwargdict = {'act':'act','action':'act','a':'act',
                  'co':'co','console':'co','console out':'console',
                  'path':'pathtype','pathtype':'pathtype','pt':'pathtype',
-                 'data':'data','d':'data','dat':'data'}
+                 'data':'data','dat':'data','d':'data'}
     
     actdict = {'reset':'reset','r':'reset','res':'reset',
                'l':'load','load':'load',
                'i':'init','init':'init','initialise':'init',
                'sesh':'session','save session':'session','session':'session',
                'ddir':'ddir','data dir':'ddir','directories':'ddir'}
-
-    kw =  KwargEval(kwargs,kwargdict,pathtype='rel',co=True,data=True)
-
+    
+    ACTLIST = list(np.unique(list(actdict.values())))
+    kw =  KwargEval(kwargs,kwargdict,pathtype='rel',co=True,data=None,act=None)
+    if len(kwargs) == 0:
+        kw.act = str(input(cprint(['Please enter one of the following actions',' [', ",".join(ACTLIST),']'],mt=['note','stat'],tr=True)))
+        if kw.act not in ['reset','load']:
+           cprint('Ignoring command, you did not select a valid entry',mt='err',co=kw.co)
+           
     try:
         kw.act = actdict[kw.act]
     except:
         cprint(['Note that','kw.act = ',str(kw.act),' does not correspond to an action!',' Skipping kwarg eval.'],mt = ['wrn','err','wrn','note'])
     
-    ACTLIST = ['reset','load','init']
+   
     #list all acceptable "get/set" inputs - consider using .lower() in the future to remove duplicates/case sensitivity - I think, however, we won't do this! 
     #Instead, import to variable using init or load - change that variable - then save using session.
     getdict = {'debug':'Debug','Debug':'Debug',
@@ -524,25 +548,88 @@ def CUV(**kwargs):
                'txt':'txt_import','text_import':'txt_import','TI':'txt_import'}
     
     
-    if len(kwargs) == 0:
-        kw.act = str(input(cprint(['Please enter one of the following actions',' [', ",".join(ACTLIST),']'],mt=['note','stat'],tg=True)))
-        if kw.act not in ['reset','load']:
-           cprint('Ignoring command, you did not select a valid entry',mt='err',co=kw.co)
     
+    #Give default filename and try to load default data
+    RFile = "DataImportSettings.json"
+    try:
+        ddata =  jsonhandler(f = RFile,pt=kw.pathtype,a='r')
+    except:
+        cprint('You don\'t have any default data! Run Init_LDI() or use CUV(act=\'reset\') to reset to default!',mt='err')
+
+    
+    #We make sure to check if we have provided data! If we have, we will check ddata['Alt_File'] and write to the correct file.
+    if kw.data != None:
+        if ddata['Alt_File'] !=None:
+            Target_File = ddata['Alt_File']
+            
+        else:
+            Target_File = RFile
+            
+    if kw.data == None:
+        kw.data = jsonhandler(f = RFile ,pt=kw.pathtype,a='r')
+        
+        if kw.data['Alt_File'] is not None:
+            Target_File = kw.data['Alt_File']
+            kw.data = jsonhandler(f = kw.data['Alt_File'] ,pt=kw.pathtype,a='r')
+        else:
+            Target_File  = RFile
     
     if kw.act == 'reset':
+        print(kw.pathtype)
         cprint('Writing default settings to file',mt='note',co=kw.co)
-        RFile = "DataImportSettings.json"
         Default = {"Debug": True, "File_Load": True, "Alt_File": None, "Default_File": RFile,"Data_Directories_File":"DataDirectories.json", "Console_Output": True, "txt_import": True}    
         jsonhandler(f = Default['Default_File'],pt=kw.pathtype,d = Default,a='w')
         return(jsonhandler(f=RFile,pt=kw.pathtype,a='r'))
     
     if kw.act == 'session':
+            try:
+                cprint(['Saving user set settings to path = ',Target_File],mt=['note','stat'],co=kw.co)
+                jsonhandler(f = Target_File,pt=kw.pathtype, d = kw.data, a='w')
+                
+            except:
+                cprint(['Alt_File failed, setting user set settings to path = ',ddata['Default_File']],mt=['wrn','stat'],co=kw.co)
+                jsonhandler(f = RFile,pt=kw.pathtype, d = kw.data, a='w')
+
+       
+    if kw.act == 'load':
+        root = tk.Tk()
+        file_path = askopenfilename(title = 'Select a settings file',filetypes=[('json files','*.json'),('All Files','*.*')]).replace('/','\\')    
+        tk.Tk.withdraw(root)
+        file_path,kw.pathtype = Rel_Checker(file_path) 
+        if file_path != "":
+            kw.data = jsonhandler(f = file_path,pt=kw.pathtype, a='r')
+            if ddata['Alt_File'] == None:
+                ddata['Alt_File'] = Rel_Checker(file_path)[0]
+                jsonhandler(f = RFile,pt=kw.pathtype, d = ddata, a='w')  
+            return(kw.data)
+        else:
+            cprint("Cancelled file loading",mt='note',co=kw.co)
+        
+    if kw.act == 'init':
+            try:
+                kw.data = jsonhandler(f = Target_File,a='r')
+                cprint(['Loading user set settings from path = ',Target_File],mt=['note','stat'],co=kw.co)
+                return(kw.data)
+            except:
+                cprint(['Failed to load alt user settings file, using defaults instead'],mt=['err'],co=kw.co)
+                return(ddata)
+        
+        
+    
+    if kw.act == 'ddir':
         RFile = "DataImportSettings.json"
         ddata = jsonhandler(f = RFile,pt=kw.pathtype,a='r')
+        root = tk.Tk()
+        file_path = askopenfilename(title = 'Select or write in a new Data Directories file',filetypes=[('json files','*.json'),('All Files','*.*')])
+        tk.Tk.withdraw(root)
+        
+        file_path,kw.pathtype = Rel_Checker(file_path) 
+        kw.data['Data_Directories_File'] = file_path
+        
         if ddata['Alt_File'] is not None:
             try:
                 cprint(['Saving user set settings to path = ',ddata['Alt_File']],mt=['note','stat'],co=kw.co)
+                
                 jsonhandler(f = ddata['Alt_File'],pt=kw.pathtype, d = kw.data, a='w')
                 
             except:
@@ -551,34 +638,8 @@ def CUV(**kwargs):
         else:
             cprint(['Writing current user settings to path = ',PathSet(ddata['Default_File'],pt=kw.pathtype)],mt=['note','stat'],co=kw.co)
             jsonhandler(f = ddata['Default_File'],pt=kw.pathtype, d = kw.data, a='w')  
-
-       
-    if kw.act == 'load':
-        root = tk.Tk()
-        file_path = askopenfilename(title = 'Select a settings file',filetypes=[('json files','*.json'),('All Files','*.*')])
-        tk.Tk.withdraw(root)
-        
-        if file_path != "":
-            jsonhandler(f = file_path,pt='abs', a='r')
-        else:
-            cprint("Cancelled file loading",mt='note',co=kw.co)
-        
-    if kw.act == 'init':
-        DefaultFile = "DataImportSettings.json"
-        ddata = jsonhandler(f = DefaultFile,a='r')
-        if ddata['Alt_File'] is not None:
-            try:
-                kw.data = jsonhandler(f = ddata['Alt_File'],a='r')
-                cprint(['Loading user set settings from path = ',ddata['Alt_File']],mt=['note','stat'],co=kw.co)
-                return(kw.data)
-            except:
-                cprint(['Failed to load alt user settings file, using defaults instead'],mt=['err'],co=kw.co)
-                return(ddata)
-        else:
-            cprint(['Initialising with last session user settings'],mt=['note'],co=kw.co)
-            return(ddata)
-        
-        return(jsonhandler(f=ddata['Default_File'],a='r'))
+            
+            
     
 def Get_FileList(path,**kwargs):
     """
