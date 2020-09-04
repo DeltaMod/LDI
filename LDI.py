@@ -130,6 +130,7 @@ def cprint(String,**kwargs):
     reset ='\033[0m'
    
     EXITCODE  = reset
+    #Note: These can eventually be generated from a script - but probably still need manual definition. Consider to replace with KwargEval in the future, but it's fine for now! 
     class ts:
         bold          = b   ='\033[01m'
         italic        = it  = '\33[3m'
@@ -229,24 +230,17 @@ def PathSet(filename,**kwargs):
     """
     ## Setting up the path and pathtype type correctly:  
     kwargdict = {'p':'pathtype','pt':'pathtype','pathtype':'pathtype'}
-    class P: 
-        pathtype='rel'
-        
-    for kwarg in kwargs:
-        try:
-            setattr(P,kwargdict[kwarg], kwargs.get(kwarg,None))
-        except:
-            cprint(['kwarg =',kwarg,'does not exist!',' Skipping kwarg eval.'],mt = ['wrn','err','wrn','note'])
+    kw = KwargEval(kwargs, kwargdict,pathtype='rel')
             
-    if P.pathtype not in ['rel','abs']: 
+    if kw.pathtype not in ['rel','abs']: 
         cprint('pathtype set incorrectly, correcting to \'rel\' and assuming your path is correct',mt='caution')
-        P.pathtype = 'rel'
+        kw.pathtype = 'rel'
     
-    if P.pathtype in ['abs','absolute']:
+    if kw.pathtype in ['abs','absolute']:
         WorkDir = ""
         
         
-    elif P.pathtype in ['rel','relative']:
+    elif kw.pathtype in ['rel','relative']:
         WorkDir = os.getcwd()+'\\'
 
     if filename == None:
@@ -276,15 +270,8 @@ def jsonhandler(**kwargs):
                  'd':'data','dat':'data','data':'data',
                  'a':'action','act':'action','action':'action',
                  'p':'pathtype','pt':'pathtype','pathtype':'pathtype'}
-    class kw:
-        pathtype = 'rel'
-        pass
-        
-    for kwarg in kwargs:
-        try:
-            setattr(kw,kwargdict[kwarg], kwargs.get(kwarg,None))
-        except:
-            cprint(['kwarg =',kwarg,'does not exist!',' Skipping kwarg eval.'],mt = ['wrn','err','wrn','note'])
+    
+    kw = KwargEval(kwargs, kwargdict, pathtype='rel')
    
     if hasattr(kw,"filename") and hasattr(kw,"action") == True:    
         if kw.action in ['read','r']:
@@ -324,7 +311,7 @@ def DataDir(**kwargs):
     
     actdict =   {'a':'add','add':'add','addfile':'add',
                  'd':'delete','del':'delete','delete':'delete',
-                 'dupl':'dupes','dupes':'dupes','duplicates':'duplicates',
+                 'dupl':'dupes','dupes':'dupes','duplicates':'dupes',
                  'list':'list','lst':'list','show':'list'}
       
     if len(kwargs) == 0:
@@ -352,10 +339,7 @@ def DataDir(**kwargs):
             tk.Tk.withdraw(root)
             kwargs['dir'] =  file_path
         """
-        
-    class kw:
-        act   = False
-        pass
+    kw = KwargEval(kwargs, kwargdict, act=False)    
     
     UV_dir = CUV(act='init',CO=False)['Data_Directories_File']
     if os.path.isabs(UV_dir) == True:
@@ -365,17 +349,12 @@ def DataDir(**kwargs):
     UV_dir = PathSet(UV_dir,p=UV_pt)
     setattr(kw,'ddir', UV_dir)
     
-    for kwarg in kwargs:
-        try:
-            setattr(kw,kwargdict[kwarg], kwargs.get(kwarg,False))
-            
-        except:
-            cprint(['kwarg =',kwarg,'does not exist!',' Skipping kwarg eval.'],mt = ['wrn','err','wrn','note'])
         
-        try:
-            kw.act = actdict[kw.act]
-        except:
-            cprint(['Note that ',kwarg,' = ',str(kw.act),' does not correspond to an action!',' Skipping kwarg eval.'],mt = ['wrn','err','wrn','note'])
+    try:
+        kw.act = actdict[kw.act]
+    except:
+        cprint(['Note that ','kw.act',' = ',str(kw.act),' does not correspond to an action!',' Skipping kwarg eval.'],mt = ['wrn','err','wrn','note'])
+        
     #Check if file exists, else write an empty file:
     if os.path.isfile(kw.ddir) == False:
             jsonhandler(f = kw.ddir,d={},pt='abs',a='w')    
@@ -475,24 +454,21 @@ def MultChoiceCom(**kwargs):
 def CUV(**kwargs):
     kwargdict = {'act':'act','action':'act','a':'act',
                  'co':'co','console':'co','console out':'console',
-                 'path':'pathtype','pathtype':'pathtype','pt':'pathtype'}
+                 'path':'pathtype','pathtype':'pathtype','pt':'pathtype',
+                 'data':'data','d':'data','dat':'data'}
     
     actdict = {'reset':'reset','r':'reset','res':'reset',
                'l':'load','load':'load',
                'i':'init','init':'init','initialise':'init',
                'sesh':'session','save session':'session','session':'session',
                'ddir':'ddir','data dir':'ddir','directories':'ddir'}
-    class kw:
-        pathtype = 'rel'
-        co       = True
-        data     = None
 
-    kw =  KwargEval(kwargs,kw,kwargdict)
+    kw =  KwargEval(kwargs,kwargdict,pathtype='rel',co=True,data=True)
 
     try:
         kw.act = actdict[kw.act]
     except:
-        cprint(['Note that ',kwarg,' = ',str(kw.act),' does not correspond to an action!',' Skipping kwarg eval.'],mt = ['wrn','err','wrn','note'])
+        cprint(['Note that','kw.act = ',str(kw.act),' does not correspond to an action!',' Skipping kwarg eval.'],mt = ['wrn','err','wrn','note'])
     
     ACTLIST = ['reset','load','init']
     #list all acceptable "get/set" inputs - consider using .lower() in the future to remove duplicates/case sensitivity - I think, however, we won't do this! 
@@ -570,51 +546,49 @@ def Get_FileList(path,**kwargs):
         ext: file extension to look for, use format '.txt'. You can use a list e.g. ['.txt','.mat','.png'] to collect multiple files. Default is all files
         sorting: "alphabetical" or "numeric" sorting, default is "alphabetical"
     """
+    kwargdict = {'pathtype':'pt','pt':'pt','path':'pt','p':'pt',
+                 'extension':'ext','ext':'ext','ex':'ext','e':'ext',
+                 's':'sort','sort':'sort','sorting':'sort'}
     #Collecting kwargs
-    for kwarg in list(kwargs.keys()):
-        if kwarg not in ['pathtype','ext','sorting']:
-            cprint('your kwarg = '+kwarg+ ' does not match any kwargs in the code. The code will still run using defaults, but you should check your spelling.',mt='err')
-    PT  = kwargs.get('pathtype','rel')
-    ext = kwargs.get('ext',None)
-    ST  = kwargs.get('sorting',None)  
+    kw = KwargEval(kwargs, kwargdict, pt = 'rel',ext = None, sort = None)
     
     cprint('=-=-=-=-=-=-=-=-=-=-=- Running: Get_FileList -=-=-=-=-=-=-=-=-=-=-=',mt = 'funct')
-    Dpath = PathSet(path,pt=PT)
-    #Checking that ST has been selected correctly
-    if ST not in [None,'alphabetical','numeric']:
+    Dpath = PathSet(path,pt=kw.pt)
+    #Checking that kw.sort has been selected correctly
+    if kw.sort not in [None,'alphabetical','numeric']:
         cprint('sorting was not set correctly, reverting to using alphabetical sorting (no extra sorting)',mt='note')
-        ST = None
+        kw.sort = None
     
     #Filtering out the intended file types from the filenames
     #First, checking that the format for ext is correct.
     extreplacer = []
-    if type(ext) is str:
-        if ext.startswith('.') is False:
-            ext = '.'+ext
-            cprint('Correcting incorrect extension from ext = \''+ext[1:]+ '\' to ext = \''+ext+'\'',mt='caution')
-        extreplacer.append(ext)
-        ext = tuple(extreplacer)
-    elif type(ext) is tuple: 
+    if type(kw.ext) is str:
+        if kw.ext.startswith('.') is False:
+            kw.ext = '.'+kw.ext
+            cprint('Correcting incorrect extension from ext = \''+kw.ext[1:]+ '\' to ext = \''+kw.ext+'\'',mt='caution')
+        extreplacer.append(kw.ext)
+        kw.ext = tuple(extreplacer)
+    elif type(kw.ext) is tuple: 
         
-        for i in range(len(ext)):
-            if ext[i].startswith('.') is False:
-                extreplacer.append('.'+ext[i])
-                cprint('tuple ext['+str(i)+'] was corrected from ext['+str(i)+'] = \''+ext[i]+'\' to ext['+str(i)+'] = \'.'+ext[i]+'\'',mt='caution')
+        for i in range(len(kw.ext)):
+            if kw.ext[i].startswith('.') is False:
+                extreplacer.append('.'+kw.ext[i])
+                cprint('tuple ext['+str(i)+'] was corrected from ext['+str(i)+'] = \''+kw.ext[i]+'\' to ext['+str(i)+'] = \'.'+kw.ext[i]+'\'',mt='caution')
             else:
-                extreplacer.append(ext[i])
-        ext = tuple(extreplacer)
+                extreplacer.append(kw.ext[i])
+        kw.ext = tuple(extreplacer)
     else:
-        ext = None
+        kw.ext = None
         cprint('ext must be in string or tuple format - setting ext = None and gathering all files instead',mt='err')
         
     summary = []
-    if ext is not None:
+    if kw.ext is not None:
         NList = {}
         DList = {}
         summary = ['\nSummary:']
-        for ex in ext:
+        for ex in kw.ext:
             NList[ex] = [file for file in os.listdir(Dpath) if file.endswith(ex)]
-            if ST == 'numeric':
+            if kw.sort == 'numeric':
                 NList[ex] = natsort.natsorted(NList[ex], key=lambda y: y.lower())
                 cprint([ex, ' files were sorted numerically'],fg=['g','c'],ts='b')
             DList[ex] = [Dpath+'\\'+name for name in NList[ex]]
@@ -625,7 +599,7 @@ def Get_FileList(path,**kwargs):
                        
     else:
         NList = [file for file in os.listdir(Dpath)]
-        if ST == 'numeric':
+        if kw.sort == 'numeric':
             NList = natsort.natsorted(NList, key=lambda y: y.lower())
             cprint([ex, ' files were sorted numerically'],fg=['g','c'])
         DList = [Dpath+'\\'+name for name in NList]
@@ -688,16 +662,7 @@ def MatLoader(file,**kwargs):
                  'dir':'path','directory':'path','path':'path','p':'path',
                  'tf':'tf','txtfile':'tf',
                  'esc':'esc','escape_character':'esc','e':'esc','esc_char':'esc'}
-    class kw:
-        txt  = False
-        path = 'same'
-        tf   = None 
-        esc  = None
-    for kwarg in kwargs:
-        try:
-            setattr(kw,kwargdict[kwarg], kwargs.get(kwarg,None))
-        except:
-            cprint(['kwarg =',kwarg,'does not exist!',' Skipping kwarg eval.'],mt = ['wrn','err','wrn','note'])
+    kw = KwargEval(kwargs, kwargdict, txt  = False, path = 'same', tf  = None, esc  = None)
     
     #Mat File Loading
     FIELDDICT = {}
