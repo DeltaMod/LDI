@@ -8,9 +8,22 @@ There's also a file called LumericalDataImport.py which goes over a particular e
 The general goal of this project is to (eventually) support importing data from most of the lumerical monitors without the need for manual tweaking, and then feature analysis functions that mirror that of the Lumerical suite.
 
 Current functions in AuxFunct (same as help(LDI), but still incomplete):
+
+ """
  
- 
- FUNCTIONS
+    Help on module LDI:
+
+    NAME
+    LDI
+
+    DESCRIPTION
+    Lumerical Data Handling
+    Created on Tue Aug 18 17:06:05 2020
+    @author: Vidar Flodgren
+    Github: https://github.com/DeltaMod
+
+    FUNCTIONS
+    -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     AbsPowIntegrator(Data, x, y, z, WL)
         "A function that uses a RectBivariateSpline function to determine the total absorbed power from a pabs_adv lumerical file."
         Calculating total power absorption as a power fraction:s
@@ -23,6 +36,45 @@ Current functions in AuxFunct (same as help(LDI), but still incomplete):
         We could simply export Pabs_tot, but I think we get more control if we do it manually, and we also save data!
     
     CUV(**kwargs)
+        Change_User_Variables -- or CUV -- is a function used to save and load user defined variables at the start, and then at the end, of any session.
+        Parameters
+        ----------
+        **kwargs : 
+            [act,action,a]              : 
+                ['reset','r','res'] - fully replaces the current DataImportSettings.json default file with default settings. This action cannot be undone
+                ['load','l']        - loads a specific file. This function opens up a file dialog for selection, so you don't need to add anything else. This also saves the location to Aux_File.
+                ['init','i','initialise'] - initialises your file with the current DataImportSettings. It will load Aux_File if the field is not None
+                ['sesh','save session','session'] - requires a data kwarg field with a dictionary listed. It will accept ANY dictionary, and save this to the currently active DataImportSettings file (or Aux_File, if loaded)
+                ['ddir','data dir','directories'] - will allow you to select a new data directories file. If the file does not exist, you can save it as a new file by writing a new name for it. 
+                
+            [co, console, console out]  = Select if console output is set to [True/False]
+            [path, pathtype, pt]        = Choose path type preference ['rel','abs']. Selecting 'rel' will save the directory of selected files in using a relative address, but only if it can! It the start of the address does not match the current working directory, absolute address will be used automatically.
+            [data, d, dat]              = Specify DataImportSettings data <type: Dict>. Must be included in act='sesh' and 'save' (when implemented), but is ignored otherwise. 
+            
+        
+        Returns 
+        -------
+        Dictionary data saved to DataImportSettings.json or Aux_File indicated within DataImportSettings.json!
+    
+    DataDir(**kwargs)
+        Function to handle loading new data from other directories - should be expanded to support an infinitely large list of directories, by appending new data to the file.
+        Note: to change currently active data-dir, you need to select a new file in CUV. I'm going to set up a function that allows you to both select a file, and to make a new one! 
+        
+        What to do here? I'm saving a file with directories, and I'm giving an option to set the save location in a different directory, isn't that a bit much?
+        Maybe I should just have the option in CUV to select a new DataDirectories file, and let this one only pull the directory from CUV?
+        
+        Current implementation:
+            UVAR = CUV(act='init') means UVAR now contains all your variables, and to save you would do CUV(d=UVAR,act = 'session'), which keeps all changes and additions you made to UVAR.
+            If you want to add a data directory using DataDir, it too will use CUV(act='init') to load the file, but this does not take into account any changes made in UVAR.
+            Solution: Add CUV(act='data_dir') to add a new empty .json file with a particular name, or to select a previously created data_dir file, and make that file the new 
+            UVAR['Data_Directories_File']. 
+            
+            How do you make sure that UVAR is updated properly? 
+            Current solution is to give a cprint call telling you to load UVAR again if you make this change, or to return the newly edited file with the function...
+    
+    FirstLaunch()
+        A function that aims to set up the file structureof a new file. Running this function first will create the DataImportSettings.json and populate it with the default settings.
+        Then, it will call an "add" command for DataDirectories.json, prompting you to select a data folder.
     
     Get_FileList(path, **kwargs)
         A function that gives you a list of filenames from a specific folder
@@ -32,7 +84,19 @@ Current functions in AuxFunct (same as help(LDI), but still incomplete):
             ext: file extension to look for, use format '.txt'. You can use a list e.g. ['.txt','.mat','.png'] to collect multiple files. Default is all files
             sorting: "alphabetical" or "numeric" sorting, default is "alphabetical"
     
+    KwargEval(fkwargs, kwargdict, **kwargs)
+        A short function that handles kwarg assignment and definition using the same kwargdict as before. To preassign values in the kw.class, you use the kwargs at the end
+        use: provide the kwargs fed to the function as fkwargs, then give a kwarg dictionary. 
+        
+        Example:
+            
+            kw = KwargEval(kwargs,kwargdict,pathtype='rel',co=True,data=None)
+            does the same as what used to be in each individual function. Note that this function only has error handling when inputting the command within which this is called.
+            Ideally, you'd use this for ALL kwarg assigments to cut down on work needed.
+    
     MatLoader(file, **kwargs)
+    
+    MultChoiceCom(**kwargs)
     
     PathSet(filename, **kwargs)
         "
@@ -41,6 +105,7 @@ Current functions in AuxFunct (same as help(LDI), but still incomplete):
         whereas abs means that you input an absolute path!
     
     cprint(String, **kwargs)
+            WARNING: The format of this script's kwarg importing is severely different from all other functions in this sheet - consider revising to make use instead of the kwargdict and assigning variables through that!
             Note that some light colour variations do not work on all terminals! To get light colours on style-inedpendent terminals, you can use ts = bold!
             kwargs:
             
@@ -65,7 +130,20 @@ Current functions in AuxFunct (same as help(LDI), but still incomplete):
                 list of acceptable entries: [True,False], default: False
     
     jsonhandler(**kwargs)
-        #%%
+         DESCRIPTION.
+         A simple script that handles saving/loading json files from/to python dictionaries. 
+        
+        Parameters
+        ----------
+        **kwargs :
+                kwargdict = {'f':'filename','fn':'filename','filename':'filename',
+                     'd':'data','dat':'data','data':'data',
+                     'a':'action','act':'action','action':'action',
+                     'p':'pathtype','pt':'pathtype','pathtype':'pathtype'}
+        
+        Returns
+        -------
+        Depends: If loading, returns the file, if saving - returns nothing
     
     maxRepeating(str, **kwargs)
         DESCRIPTION.
@@ -80,7 +158,7 @@ Current functions in AuxFunct (same as help(LDI), but still incomplete):
         
         Returns
         -------
-        res,coount
+        res,count
         Character and total number consecutive
 
-
+"""
