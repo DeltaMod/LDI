@@ -26,6 +26,39 @@ import json
 from collections import Counter
 import natsort
 
+def KwargEval(fkwargs,kwargdict,**kwargs):
+    """
+    A short function that handles kwarg assignment and definition using the same kwargdict as before. To preassign values in the kw.class, you use the kwargs at the end
+    use: provide the kwargs fed to the function as fkwargs, then give a kwarg dictionary. 
+    
+    Example:
+        
+        kw = KwargEval(kwargs,kwargdict,pathtype='rel',co=True,data=None)
+        does the same as what used to be in each individual function. Note that this function only has error handling when inputting the command within which this is called.
+        Ideally, you'd use this for ALL kwarg assigments to cut down on work needed.
+    """
+    #create kwarg class 
+    class kwclass:
+        pass
+    
+    #This part initialises the "default" values inside of kwclass using **kwargs. If you don't need any defaults, then you can ignore this.
+    if len(kwargs)>0:
+        for kwarg in kwargs:
+            kval = kwargs.get(kwarg,False)
+            try:
+                setattr(kwclass,kwargdict[kwarg.lower()], kval)
+                
+            except:
+                cprint(['kwarg =',kwarg,'does not exist!',' Skipping kwarg eval.'],mt = ['wrn','err','wrn','note'])
+    #Setting the class kwargs from the function kwargs!     
+    for kwarg in fkwargs:
+        fkval = fkwargs.get(kwarg,False)
+        try:
+            setattr(kwclass,kwargdict[kwarg.lower()], fkval)
+            
+        except:
+            cprint(['kwarg =',kwarg,'does not exist!',' Skipping kwarg eval.'],mt = ['wrn','err','wrn','note'])
+    return(kwclass)
 
     
 def cprint(String,**kwargs):
@@ -53,15 +86,16 @@ def cprint(String,**kwargs):
     co: console output - a global variable if you want an option to disable console ouput throughout your code!
         list of acceptable entries: [True,False], default: False
     """
+    kwargdict = {'mt':'mt','message type':'mt','message':'mt',
+                 'fg':'fg', 'foreground':'fg',
+                 'bg':'bg', 'background':'bg',
+                 'ts':'ts', 'text style':'ts', 'style':'ts',
+                 'sc':'sc', 'start code':'sc',
+                 'jc':'jc', 'join character':'jc', 'join char':'jc',
+                 'tr':'tr', 'text return':'tr', 'return':'tr',
+                 'co':'co', 'console':'co','console output':'co'}
     
-    msgtype   = kwargs.get('mt','custom')
-    fg_str    = kwargs.get('fg',None)
-    bg_str    = kwargs.get('bg',None)  
-    style_str = kwargs.get('ts',None)
-    SC_str    = kwargs.get('sc',None)
-    jc_str    = kwargs.get('jc',' ')
-    tr_bool   = kwargs.get('tr',False)
-    co_bool   = kwargs.get('co',True)
+    kw = KwargEval(kwargs,kwargdict,mt='custom',fg=None,bg=None,ts=None,sc=None,jc=' ',tr=False,co=True)
     
     #We convert all of these to lists to make sure that we can give the software strings or lists without any problems
     if type(String) == str:
@@ -86,12 +120,12 @@ def cprint(String,**kwargs):
                 SoL = [None for i in range(len(matchwith))]
         
         return(SoL)
-    msgtype   = ListMatcher(msgtype,String)
-    fg_str    = ListMatcher(fg_str,String)
-    bg_str    = ListMatcher(bg_str,String)
-    style_str = ListMatcher(style_str,String)
-    SC_str    = ListMatcher(SC_str,String)
-    jc_str    = ListMatcher(jc_str,String) 
+    kw.mt    = ListMatcher(kw.mt,String)
+    kw.fg    = ListMatcher(kw.fg,String)
+    kw.bg    = ListMatcher(kw.bg,String)
+    kw.ts    = ListMatcher(kw.ts,String)
+    kw.sc    = ListMatcher(kw.sc,String)
+    kw.jc    = ListMatcher(kw.jc,String) 
   
     reset ='\033[0m'
    
@@ -146,45 +180,44 @@ def cprint(String,**kwargs):
     PRINTSTR = []
     for i in range(len(String)):
         STARTCODE = ''
-        if msgtype[i] == 'custom':    
+        if kw.mt[i] == 'custom':    
             
             try: 
-                style = getattr(ts,style_str[i])
+                style = getattr(ts,kw.ts[i])
             except:
-                if style_str[i] is not None:
-                    cprint(['Attribute ts =',str(style_str[i]),'does not exist - reverting to default value'],mt='err')
+                if kw.ts[i] is not None:
+                    cprint(['Attribute ts =',str(kw.ts[i]),'does not exist - reverting to default value'],mt='err')
                 style = ''
             
             try:
-                 STARTCODE = STARTCODE + getattr(fg,fg_str[i])
+                 STARTCODE = STARTCODE + getattr(fg,kw.fg[i])
             except:
-                if fg_str[i] is not None:
-                    cprint(['Attribute fg =',str(fg_str[i]),'does not exist - reverting to default value'],mt='err')
+                if kw.fg[i] is not None:
+                    cprint(['Attribute fg =',str(kw.fg[i]),'does not exist - reverting to default value'],mt='err')
                 STARTCODE = STARTCODE 
                 
             try:
-                 STARTCODE = STARTCODE + getattr(bg,bg_str[i])
+                 STARTCODE = STARTCODE + getattr(bg,kw.bg[i])
             except:
-                if bg_str[i] is not None:
-                    cprint(['Attribute bg =',str(bg_str[i]),'does not exist - reverting to default value'],mt='err')
+                if kw.bg[i] is not None:
+                    cprint(['Attribute bg =',str(kw.bg[i]),'does not exist - reverting to default value'],mt='err')
                 STARTCODE = STARTCODE 
             
-            if SC_str[i] is not None:
-                STARTCODE = SC_str[i]
+            if kw.sc[i] is not None:
+                STARTCODE = kw.sc[i]
             STARTCODE = STARTCODE+style
         else:
             try:
-                STARTCODE = getattr(mps,msgtype[i])
+                STARTCODE = getattr(mps,kw.mt[i])
             except:
-                cprint(['Message preset', 'mt = '+str(msgtype[i]),'does not exist. Printing normal text instead!'],mt = ['wrn','err','wrn'])
+                cprint(['Message preset', 'mt = '+str(kw.mt[i]),'does not exist. Printing normal text instead!'],mt = ['wrn','err','wrn'])
    
-        PRINTSTR.append(STARTCODE+String[i]+EXITCODE+jc_str[i])
-    if co_bool == True:     
-        if tr_bool == False:
+        PRINTSTR.append(STARTCODE+String[i]+EXITCODE+kw.jc[i])
+    if kw.co == True:     
+        if kw.tr == False:
             print(''.join(PRINTSTR))
         else:
             return(''.join(PRINTSTR))
-
 
 
 #%%
@@ -436,24 +469,6 @@ def DataDir(**kwargs):
         
 def MultChoiceCom(**kwargs):
     pass
-
-def KwargEval(fkwargs,kwclass,kwargdict,**kwargs):
-    """
-    A short function that handles kwarg assignment and definition using the same kwargdict as before. To preassign values in the kw.class, you use the kwargs at the end
-    use: provide the kwargs fed to the function as fkwargs, then give a kwarg dictionary. 
-    
-    Example:
-        
-        kw = KwargEval(kwargs,kwargdict,pathtype='rel',)
-    """
-    for kwarg in fkwargs:
-        fkval = fkwargs.get(kwarg,False)
-        try:
-            setattr(kwclass,kwargdict[kwarg.lower()], fkval)
-            
-        except:
-            cprint(['kwarg =',kwarg,'does not exist!',' Skipping kwarg eval.'],mt = ['wrn','err','wrn','note'])
-    return(kwclass)
     
             
     
