@@ -1,7 +1,9 @@
 # LDI
 Lumerical Data format importing schemes! 
 Contains the main LDI file (LDI.py) which contains QofL functions for console printing, file categorisation, json settings exporting and importing (and eventually more) with some additional functions that allow for direct handling of Lumerical data.
-There's also a file called LumericalDataImport.py which goes over a particular example of how to handle heaps of data (currently requires manual data directory editing for your data to work, but this will eventually be replaced by DataDir() and some locally defined json files!
+There's also a file called LumericalDataImport.py which goes over a particular example of how to handle heaps of data. 
+With the new Init_LDI(), CUV() and DataDir() functionality, it is now possible to add, store and load data directories by changing only one string (from '1' to something else) and change between them with no effort.
+I'm considering adding a user input method (built from the DataDir(act='list')) so that you can select your data directory, but it might be better if you just use it to see what you have, and then change your dictionary string as your see fit!
 
 **Keep in mind, this project is VERY EARLY in development, and will likely never be fully finished unless I somehow end up using all parts of lumerical at least once!**
 
