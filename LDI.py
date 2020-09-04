@@ -26,6 +26,27 @@ import json
 from collections import Counter
 import natsort
 
+
+def Init_LDI():
+    """
+    A function that aims to set up the file structure of a new project. Running this function first will create the DataImportSettings.json and populate it with the default settings.
+    Then, it will call an "add" command for DataDirectories.json, prompting you to select a data folder. 
+    """
+    
+    #First, check if each of the files exist in your working directory:
+    DIS = "DataImportSettings.json"
+    Ddir= "DataDirectories.json"
+    if os.path.isfile(PathSet(DIS, pt = 'rel')) and os.path.isfile(PathSet(Ddir,pt='rel')) == True:
+        cprint(['Comment out your Init_LDI! You already have both',DIS,'and',Ddir],mt = ['wrn','stat','wrn','stat'])
+    if os.path.isfile(PathSet(DIS, pt = 'rel')) == False:
+        cprint(['Creating',DIS],mt=['curio','stat'])
+        CUV(act='reset',pt='rel')
+    
+    if os.path.isfile(PathSet(Ddir,pt='rel')) == False:
+        cprint(['Creating',DIS,'Please also select the first Data folder to append!'],mt=['curio','stat','note'],jc=[' ',':\n ',''])
+        DataDir(act='add')
+    
+    
 def KwargEval(fkwargs,kwargdict,**kwargs):
     """
     A short function that handles kwarg assignment and definition using the same kwargdict as before. To preassign values in the kw.class, you use the kwargs at the end
@@ -452,6 +473,28 @@ def MultChoiceCom(**kwargs):
             
     
 def CUV(**kwargs):
+    """
+    Change_User_Variables -- or CUV -- is a function used to save and load user defined variables at the start, and then at the end, of any session.
+    Parameters
+    ----------
+    **kwargs : 
+        [act,action,a]              : 
+            ['reset','r','res'] - fully replaces the current DataImportSettings.json default file with default settings. This action cannot be undone
+            ['load','l']        - loads a specific file. This function opens up a file dialog for selection, so you don't need to add anything else. This also saves the location to Aux_File.
+            ['init','i','initialise'] - initialises your file with the current DataImportSettings. It will load Aux_File if the field is not None
+            ['sesh','save session','session'] - requires a data kwarg field with a dictionary listed. It will accept ANY dictionary, and save this to the currently active DataImportSettings file (or Aux_File, if loaded)
+            ['ddir','data dir','directories'] - will allow you to select a new data directories file. If the file does not exist, you can save it as a new file by writing a new name for it. 
+            
+        [co, console, console out]  = Select if console output is set to [True/False]
+        [path, pathtype, pt]        = Choose path type preference ['rel','abs']. Selecting 'rel' will save the directory of selected files in using a relative address, but only if it can! It the start of the address does not match the current working directory, absolute address will be used automatically.
+        [data, d, dat]              = Specify DataImportSettings data <type: Dict>. Must be included in act='sesh' and 'save' (when implemented), but is ignored otherwise. 
+        
+
+    Returns 
+    -------
+    Dictionary data saved to DataImportSettings.json or Aux_File indicated within DataImportSettings.json!
+
+    """
     kwargdict = {'act':'act','action':'act','a':'act',
                  'co':'co','console':'co','console out':'console',
                  'path':'pathtype','pathtype':'pathtype','pt':'pathtype',

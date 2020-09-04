@@ -9,7 +9,7 @@ A small example file on what you would need to do to set up a normal setup for a
 
 #use this to set current directory without running code: os.chdir(os.path.dirname(sys.argv[0]))
 
-from LDI import (Get_FileList,MatLoader,CUV,jsonhandler,cprint,PathSet,AbsPowIntegrator,DataDir)
+from LDI import (Get_FileList,MatLoader,CUV,jsonhandler,cprint,PathSet,AbsPowIntegrator,DataDir,Init_LDI)
 # import os
 # import sys
 # import time
@@ -30,8 +30,8 @@ from LDI import (Get_FileList,MatLoader,CUV,jsonhandler,cprint,PathSet,AbsPowInt
 # import natsort
 # from scipy.constants import e
 
-#run one time (currently missing [textimport])
-UV = CUV(act = 'reset')
+#run one time to generate your DataImportSettings.json and DataDirectories.json settings files! Don't worry if you run this function twice, it will never overwrite these files once created!
+Init_LDI()
 
 #every consecutive time, run: 
 UV = CUV(act = 'init')
