@@ -355,7 +355,8 @@ def DataDir(**kwargs):
     actdict =   {'a':'add','add':'add','addfile':'add',
                  'd':'delete','del':'delete','delete':'delete',
                  'dupl':'dupes','dupes':'dupes','duplicates':'dupes',
-                 'list':'list','lst':'list','show':'list'}
+                 'list':'list','lst':'list','show':'list',
+                 'load':'load'}
       
     if len(kwargs) == 0:
         
@@ -484,7 +485,7 @@ def DataDir(**kwargs):
         cprint(listshow,mt=cplist)
         
     if kw.act == 'load':
-        pass
+        return(DirDict)
 
         
 def MultChoiceCom(**kwargs):

@@ -28,7 +28,7 @@ import natsort
 from scipy.constants import e
 
 
-from LDI import (Get_FileList,MatLoader,CUV,jsonhandler,cprint,PathSet,AbsPowIntegrator)
+from LDI import (Get_FileList,MatLoader,CUV,jsonhandler,cprint,PathSet,AbsPowIntegrator,Rel_Checker)
 
 ## for Palatino and other serif fonts use:
 plt.rcParams.update({
@@ -57,7 +57,8 @@ plt.rcParams['figure.autolayout']  = True
 UV = CUV(act = 'init')
 UV['Debug'] = False
 #We get a list of all files in dicts matching the number of extensions we are searching for.
-DIR1 = 'C:\\Users\\vidar\\Desktop\\MD2_Contacts-24-08-2020'; DIRPT = 'abs'
+DIR,DIRPT = Rel_Checker(DataDir(act='load')['1'])
+#DIR1 = 'C:\\Users\\vidar\\Desktop\\MD2_Contacts-24-08-2020'; DIRPT = 'abs'
 #DIR1 = "Z:\\HDD-PC\\Work\\University Work\\Physics\\PhD Local Storage\\Data\\MD2_NoContacts-24-08-2020"; DIRPT = 'abs'
 DList,NList = Get_FileList(DIR1,pathtype=DIRPT, ext = (('mat','txt')),sorting='numeric')
 
