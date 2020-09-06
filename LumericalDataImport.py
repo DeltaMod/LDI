@@ -28,7 +28,7 @@ import natsort
 from scipy.constants import e
 
 
-from LDI import (Get_FileList,MatLoader,CUV,jsonhandler,cprint,PathSet,AbsPowIntegrator,Rel_Checker)
+from LDI import (Get_FileList,MatLoader,CUV,jsonhandler,cprint,PathSet,AbsPowIntegrator,Rel_Checker,DataDir,Init_LDI)
 
 ## for Palatino and other serif fonts use:
 plt.rcParams.update({
@@ -57,10 +57,10 @@ plt.rcParams['figure.autolayout']  = True
 UV = CUV(act = 'init')
 UV['Debug'] = False
 #We get a list of all files in dicts matching the number of extensions we are searching for.
-DIR,DIRPT = Rel_Checker(DataDir(act='load')['1'])
+DIR,DIRPT = Rel_Checker(DataDir(act='load')['0'])
 #DIR1 = 'C:\\Users\\vidar\\Desktop\\MD2_Contacts-24-08-2020'; DIRPT = 'abs'
 #DIR1 = "Z:\\HDD-PC\\Work\\University Work\\Physics\\PhD Local Storage\\Data\\MD2_NoContacts-24-08-2020"; DIRPT = 'abs'
-DList,NList = Get_FileList(DIR1,pathtype=DIRPT, ext = (('mat','txt')),sorting='numeric')
+DList,NList = Get_FileList(DIR,pathtype=DIRPT, ext = (('mat','txt')),sorting='numeric')
 
 #%%
 #We probably only want to only load one matfile at a time, because otherwise we're going to quickly run out of memory!
@@ -78,7 +78,7 @@ I am currently thinking about a way of defining the variables in Dproc autmatica
 if UV['Debug'] == False:
      
     for file in DList['.mat']:
-        MDat,MFi = MatLoader(file,txt=UV['txtimport'])    
+        MDat,MFi = MatLoader(file,txt=UV['txt_import'])    
         try:
             MDat['P_abs'] = np.reshape(MDat['Pabs'],[MDat['lambda'].shape[0],MDat['z'].shape[0],MDat['y'].shape[0],MDat['x'].shape[0]])   
             #plt.imshow(np.rot90(MDat['P_abs'][0,:,:,6])) displays the same (xslice for [y,z]) as in lumerical

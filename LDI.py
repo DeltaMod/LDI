@@ -318,7 +318,7 @@ def Rel_Checker(path):
     #First, we check if the current working directory is actually correct!
     DIS  = "DataImportSettings.json"
     Ddir = "DataDirectories.json"
-    if os.path.isfile(PathSet(DIS, pt = 'rel')) and os.path.isfile(PathSet(Ddir,pt='rel')) == True:
+    if os.path.isfile(PathSet(DIS, pt = 'rel')) or os.path.isfile(PathSet(Ddir,pt='rel')) == True:
         WorkDir = os.getcwd()+'\\'
         if os.path.isabs(path) == True:
             if WorkDir in path:
@@ -565,7 +565,13 @@ def CUV(**kwargs):
             
         else:
             Target_File = RFile
-            
+    if kw.act == 'reset':
+        print(kw.pathtype)
+        cprint('Writing default settings to file',mt='note',co=kw.co)
+        Default = {"Debug": True, "File_Load": True, "Alt_File": None, "Default_File": RFile,"Data_Directories_File":"DataDirectories.json", "Console_Output": True, "txt_import": True}    
+        jsonhandler(f = Default['Default_File'],pt=kw.pathtype,d = Default,a='w')
+        return(jsonhandler(f=RFile,pt=kw.pathtype,a='r'))
+          
     if kw.data == None:
         kw.data = jsonhandler(f = RFile ,pt=kw.pathtype,a='r')
         
@@ -575,12 +581,7 @@ def CUV(**kwargs):
         else:
             Target_File  = RFile
     
-    if kw.act == 'reset':
-        print(kw.pathtype)
-        cprint('Writing default settings to file',mt='note',co=kw.co)
-        Default = {"Debug": True, "File_Load": True, "Alt_File": None, "Default_File": RFile,"Data_Directories_File":"DataDirectories.json", "Console_Output": True, "txt_import": True}    
-        jsonhandler(f = Default['Default_File'],pt=kw.pathtype,d = Default,a='w')
-        return(jsonhandler(f=RFile,pt=kw.pathtype,a='r'))
+
     
     if kw.act == 'session':
             try:
