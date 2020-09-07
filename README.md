@@ -1,3 +1,6 @@
+# ATTENTION
+If you are cloning this, would you mind submitting what you had hoped to find in this repository by filling in this: [https://github.com/DeltaMod/LDI/issues/new?assignees=&labels=question&template=intended_use.md&title=] issue template? Thanks!
+ 
 # LDI
 Lumerical Data format importing schemes! 
 Contains the main LDI file (LDI.py) which contains QofL functions for console printing, file categorisation, json settings exporting and importing (and eventually more) with some additional functions that allow for direct handling of Lumerical data.
