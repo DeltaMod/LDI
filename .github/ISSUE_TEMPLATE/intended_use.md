@@ -1,5 +1,5 @@
 ---
-name: Intended_Use
+name: Intended Use
 about: Short form description of what you expected this repository to do.
 title: ''
 labels: question
