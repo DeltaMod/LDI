@@ -57,7 +57,7 @@ plt.rcParams['figure.autolayout']  = True
 UV = CUV(act = 'init')
 UV['Debug'] = False
 #We get a list of all files in dicts matching the number of extensions we are searching for.
-DIR,DIRPT = Rel_Checker(DataDir(act='load')['0'])
+DIR,DIRPT = Rel_Checker(DataDir(act='load')['3'])
 #DIR1 = 'C:\\Users\\vidar\\Desktop\\MD2_Contacts-24-08-2020'; DIRPT = 'abs'
 #DIR1 = "Z:\\HDD-PC\\Work\\University Work\\Physics\\PhD Local Storage\\Data\\MD2_NoContacts-24-08-2020"; DIRPT = 'abs'
 DList,NList = Get_FileList(DIR,pathtype=DIRPT, ext = (('mat','txt')),sorting='numeric')
@@ -75,6 +75,7 @@ P_out = 8.4e-15
 """
 I am currently thinking about a way of defining the variables in Dproc autmatically...
 """
+UV['Debug'] = True
 if UV['Debug'] == False:
      
     for file in DList['.mat']:
@@ -86,7 +87,7 @@ if UV['Debug'] == False:
             
             MDat['P_tot'] = AbsPowIntegrator(MDat['P_abs'],MDat['x'],MDat['y'],MDat['z'],MDat['lambda'])
             Dproc['AbsPow'].append(max(MDat['P_tot']))
-            if UV['txtimport'] == True:
+            if UV['txt_import'] == True:
                 anw_l = np.array([0,0,MDat['ENW_z']])
                 enw_l = np.array([MDat['ENW_x'],MDat['ENW_y'],MDat['ENW_z']])
                 squared_dist = np.sum((anw_l-enw_l)**2, axis=0)

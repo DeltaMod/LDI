@@ -409,7 +409,7 @@ def DataDir(**kwargs):
         """
         WARNING! askdirectory gives out the wrong format 
         """
-        DirDict[str(1+len(DirDict))] = file_path
+        DirDict[str(len(DirDict))] = file_path
         if file_path != '':
             jsonhandler(f = kw.ddir,d=DirDict,pt='abs', a='w')
         else:
@@ -782,11 +782,20 @@ def MatLoader(file,**kwargs):
     if '#refs#' in FIELDLIST: 
         FIELDLIST.remove('#refs#')
         cprint(["Scanning fields:"]+FIELDLIST,fg='c',ts='b')
+    
     for i in range(len(FIELDLIST)):
-        dfields.append(list(f[FIELDLIST[i]].keys()))
-        
+        try:
+            dfields.append(list(f[FIELDLIST[i]].keys()))
+            twokeys = True
+        except:
+            dfields.append(FIELDLIST)
+            twokeys = False
         for field in dfields[i]:
-            data[field] = np.array(f[FIELDLIST[i]][field])
+            
+            if twokeys == True:
+                data[field] = np.array(f[FIELDLIST[i]][field])
+            elif twokeys == False:
+                data[field] = np.array(f[FIELDLIST[i]])
             if len(data[field].shape) == 2 and data[field].shape[0] == 1:
                 oldshape    = data[field].shape
                 data[field] = data[field][0]
@@ -834,17 +843,30 @@ def MatLoader(file,**kwargs):
                 d.append(fields)  
         if len(d[-1]) < len(d[0]):
             d.pop(-1)
-        try:
-            float(d[0][1])
-            FieldI = 0
-            VarI   = 1
-        except:
+        floatcol = np.zeros([len(d),len(d[0])])
+        for i in range(len(d)):         
+            for k in range(len(d[0])):
+                try:
+                    A = float(d[i][k])
+                    floatcol[i,k] = 1
+                except:
+                    floatcol[i,k] = 0
+        LC = sum(floatcol[:,0])
+        RC = sum(floatcol[:,1])
+        
+        if LC > RC:
+            VarI = 0
             FieldI = 1
-            VarI   = 0
-            
+        else:
+            VarI = 1
+            FieldI = 0
+                    
         for ent in d:
-            ent[VarI] = float(ent[VarI])
-            data[ent[FieldI]] = float(ent[VarI])
+            try:
+                ent[VarI] = float(ent[VarI])
+                data[ent[FieldI]] = float(ent[VarI])
+            except:
+                data[ent[FieldI]] =  ent[VarI]
         cprint(['Loaded auxilary variables from file =',data['txtfilepath'], 'successfully!\n','Added:',str(d)],mt=['note','stat','note','note','stat'])
 
         
