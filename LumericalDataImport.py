@@ -76,6 +76,7 @@ P_out = 8.4e-15
 I am currently thinking about a way of defining the variables in Dproc autmatically...
 """
 UV['Debug'] = True
+UV['txt_import'] = False
 if UV['Debug'] == False:
      
     for file in DList['.mat']:

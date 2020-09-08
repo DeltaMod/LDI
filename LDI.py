@@ -791,11 +791,11 @@ def MatLoader(file,**kwargs):
             dfields.append(FIELDLIST)
             twokeys = False
         for field in dfields[i]:
-            
             if twokeys == True:
                 data[field] = np.array(f[FIELDLIST[i]][field])
             elif twokeys == False:
-                data[field] = np.array(f[FIELDLIST[i]])
+                data[field] = np.array(f[field])
+                
             if len(data[field].shape) == 2 and data[field].shape[0] == 1:
                 oldshape    = data[field].shape
                 data[field] = data[field][0]
@@ -804,7 +804,8 @@ def MatLoader(file,**kwargs):
     mname = file.split('\\')[-1]
     data['matfilepath'] = file
     data['matname'] = mname
-    #.txt File Loading
+    
+    #%% .txt File Loading
     if kw.txt == True:
         
         fname = mname.split('.')[0]
