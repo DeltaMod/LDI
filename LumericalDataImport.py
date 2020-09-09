@@ -28,7 +28,7 @@ import natsort
 from scipy.constants import e
 
 
-from LDI import (Get_FileList,MatLoader,CUV,jsonhandler,cprint,PathSet,AbsPowIntegrator,Rel_Checker,DataDir,Init_LDI)
+from LDI import (Get_FileList,MatLoader,CUV,jsonhandler,cprint,PathSet,AbsPowIntegrator,Rel_Checker,DataDir,Init_LDI,Prog_Dict_Importer)
 
 ## for Palatino and other serif fonts use:
 plt.rcParams.update({
@@ -74,6 +74,48 @@ P_out = 8.4e-15
 """
 I am currently thinking about a way of defining the variables in Dproc autmatically...
 """
+if UV['Debug'] == True:
+    Dproc = {} # Create an empty dictionary to store your data in 
+    for file in DList['.mat']:
+        MDat,MFi = MatLoader(file,txt=UV['txt_import'])
+        try:
+            
+            #First, add additional variables that need specific calculation manually into MDat (so Prog_Dict_Importer can grab them)
+            if UV['txt_import'] == True:
+                anw_l = np.array([0,0,MDat['ENW_z']])
+                enw_l = np.array([MDat['ENW_x'],MDat['ENW_y'],MDat['ENW_z']])
+                squared_dist = np.sum((anw_l-enw_l)**2, axis=0)
+                enw_rot = MDat['ENW_z_rot'] 
+                
+                
+                if MDat['ENW_y'] == 0:
+                    atdeg =  0
+                else:
+                    atdeg = np.degrees(np.arctan(abs(MDat['ENW_x']/MDat['ENW_y']))) 
+                
+                rel_rot = enw_rot + atdeg
+                
+                if rel_rot>180:
+                    rel_rot = atdeg - (180 - enw_rot)  
+                MDat['rel_rot'] = rel_rot
+                
+            #Then do calculations on the longer data sets and store only the specific single data needed in MDat
+            MDat['P_abs'] = np.reshape(MDat['Pabs'],[MDat['lambda'].shape[0],MDat['z'].shape[0],MDat['y'].shape[0],MDat['x'].shape[0]])
+            cprint(['Now processing file: ',str(file)],mt='curio')
+            
+            MDat['P_tot']  = AbsPowIntegrator(MDat['P_abs'],MDat['x'],MDat['y'],MDat['z'],MDat['lambda'])
+            MDat['AbsPow'] = max(MDat['P_tot'])
+            
+            #Use Prog_Dict_Importer to append remainder data that has a length smaller than ml=int *default 1 to Dproc
+            Dproc = Prog_Dict_Importer(Dproc,MDat)
+            
+        except:
+            pass
+
+            
+            
+#%%            
+
 
 if UV['Debug'] == False:
      

@@ -756,7 +756,7 @@ def maxRepeating(str, **kwargs):
     Character and total number consecutive
 
     """
-    guess = kwargs.get('guess',None)
+    guess = kwargs.get('guess',None) 
     l = len(str) 
     count = 0
   
@@ -904,7 +904,50 @@ def MatLoader(file,**kwargs):
         cprint('Naming convention might be strange - you should know better what type of file you loaded...',fg='o')    
     return(data,dfields) 
 
+def Prog_Dict_Importer(Dict, data, **kwargs):
+    """
+    Automatically finds any and all fields inside of data that have a set length of less than maxlen = 1 (or higher, if set manually)
+    Use: import many unique variables other than the main data into a dictionary for later use!
+    Parameters
+    ----------
+    data : This is the dictionary that you create when you use Matloader - Specifically: data,Fields = MatLoader(file,txt=UV['txt_import'])    
+    
+    Dict: This can be an empty or partially filled dictionary. This is where the values from each key in data get stored - ergo the "progressive" part
+    
+    **kwargs : A list of optional settings that you can use 
+        [maxlen,length,ml] - maximum length of array to keep. If the length of an array exceeds this value, it will not be stored within
+        Default value: 1
+        
 
+    Returns
+    -------
+    Dict - it appends same named keys from data into dict, and adds any new fields that were not present 
+    warnings: If you append a new field into a partially filled dictionary, the script will warn you - but continue anyways. 
+    If this comes from you wanting to merge data sets - make sure that no two fields share the same name, else you will get arrays of different lengths.
+
+    """
+    kwargdict = {'maxlen':'ml','length':'ml','ml':'ml'}
+    kw = KwargEval(kwargs, kwargdict, ml = 1)
+    for key in data.keys():
+        #test if iterable:
+        try:
+            iter(data[key])
+            Iterable = True
+        except:
+            Iterable = False
+        
+        #check if the key exists, and if not - create it
+        if key not in Dict.keys():
+            Dict[key] = []
+        else:
+            if Iterable == True:
+                if len(data[key]) <= kw.ml or type(data[key]) == str:
+                    Dict[key].append(data[key])
+            else:
+                Dict[key].append(data[key])
+            
+    return(Dict)
+        
 def AbsPowIntegrator(Data,x,y,z,WL):
     
     """
