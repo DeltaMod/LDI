@@ -670,6 +670,7 @@ def Get_FileList(path,**kwargs):
         ext: file extension to look for, use format '.txt'. You can use a list e.g. ['.txt','.mat','.png'] to collect multiple files. Default is all files
         sorting: "alphabetical" or "numeric" sorting, default is "alphabetical"
     """
+    S_ESC = LinWin()
     kwargdict = {'pathtype':'pt','pt':'pt','path':'pt','p':'pt',
                  'extension':'ext','ext':'ext','ex':'ext','e':'ext',
                  's':'sort','sort':'sort','sorting':'sort'}
@@ -715,7 +716,7 @@ def Get_FileList(path,**kwargs):
             if kw.sort == 'numeric':
                 NList[ex] = natsort.natsorted(NList[ex], key=lambda y: y.lower())
                 cprint([ex, ' files were sorted numerically'],fg=['g','c'],ts='b')
-            DList[ex] = [Dpath+'\\'+name for name in NList[ex]]
+            DList[ex] = [Dpath+S_ESC+name for name in NList[ex]]
             
         
             DSum = len(DList[ex])
@@ -726,7 +727,7 @@ def Get_FileList(path,**kwargs):
         if kw.sort == 'numeric':
             NList = natsort.natsorted(NList, key=lambda y: y.lower())
             cprint([ex, ' files were sorted numerically'],fg=['g','c'])
-        DList = [Dpath+'\\'+name for name in NList]
+        DList = [Dpath+S_ESC+name for name in NList]
     
     cprint(['A total of',str(len(DList)), 'file extensions were scanned.']+summary,ts='b',fg=['c','g','c',None,'g'],jc = [' ',' ','\n'])
     
