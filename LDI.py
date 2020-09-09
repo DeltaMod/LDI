@@ -670,7 +670,8 @@ def Get_FileList(path,**kwargs):
         ext: file extension to look for, use format '.txt'. You can use a list e.g. ['.txt','.mat','.png'] to collect multiple files. Default is all files
         sorting: "alphabetical" or "numeric" sorting, default is "alphabetical"
     """
-    S_ESC = LinWin()
+    
+    S_ESC = LinWin() #check if an escape character \ is needed or if / should be used
     kwargdict = {'pathtype':'pt','pt':'pt','path':'pt','p':'pt',
                  'extension':'ext','ext':'ext','ex':'ext','e':'ext',
                  's':'sort','sort':'sort','sorting':'sort'}
@@ -782,7 +783,7 @@ def maxRepeating(str, **kwargs):
   
 def MatLoader(file,**kwargs):
     cprint('=-=-=-=-=-=-=-=-=-=-=- Running: MatLoader -=-=-=-=-=-=-=-=-=-=-=',mt = 'funct')
-    
+    S_ESC = LinWin()
     kwargdict = {'txt':'txt','textfile':'txt',
                  'dir':'path','directory':'path','path':'path','p':'path',
                  'tf':'tf','txtfile':'tf',
@@ -820,7 +821,7 @@ def MatLoader(file,**kwargs):
                 data[field] = data[field][0]
                 cprint(['corrected','data['+str(field)+'].shape','from',str(oldshape),'to',str(data[field].shape)],mt=['note','status','note','wrn','note','status'])
     
-    mname = file.split('\\')[-1]
+    mname = file.split(S_ESC)[-1]
     data['matfilepath'] = file
     data['matname'] = mname
     
@@ -832,9 +833,9 @@ def MatLoader(file,**kwargs):
             path = os.path.dirname(file)
         txtlp = Get_FileList(path, ext='.txt',pathtype='abs')[0]
 
-        txtind = [i for i, s in enumerate(txtlp['.txt']) if (s.split('\\')[-1]).split('.')[0] in fname]
+        txtind = [i for i, s in enumerate(txtlp['.txt']) if (s.split(S_ESC)[-1]).split('.')[0] in fname]
         data['txtfilepath'] = txtlp['.txt'][txtind[0]]
-        data['txtname'] = data['txtfilepath'].split('\\')[-1]
+        data['txtname'] = data['txtfilepath'].split(S_ESC)[-1]
         d = []
         
         #determine escape character if none is given
