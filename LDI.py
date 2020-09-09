@@ -249,6 +249,9 @@ def PathSet(filename,**kwargs):
     Note that rel means you input a relative path, and it auto-completes it to be an absolute path, 
     whereas abs means that you input an absolute path!
     """
+    #Check if we need \\ or / for our directories
+    S_ESC = LinWin()
+        
     ## Setting up the path and pathtype type correctly:  
     kwargdict = {'p':'pathtype','pt':'pathtype','pathtype':'pathtype'}
     kw = KwargEval(kwargs, kwargdict,pathtype='rel')
@@ -262,7 +265,7 @@ def PathSet(filename,**kwargs):
         
         
     elif kw.pathtype in ['rel','relative']:
-        WorkDir = os.getcwd()+'\\'
+        WorkDir = os.getcwd()+S_ESC
 
     if filename == None:
         filename = ''
@@ -315,11 +318,14 @@ def Rel_Checker(path):
     Simple function that checks if a file location is relative to the working directory, and if so - replaces the file directory with a relative coordinate version.
     Returns: (path,pt). So, relative (path) (if found to be relative), and path type (pt) just in case
     """
+    #Check if we need \\ or / for our directories
+    S_ESC = LinWin()
+        
     #First, we check if the current working directory is actually correct!
     DIS  = "DataImportSettings.json"
     Ddir = "DataDirectories.json"
     if os.path.isfile(PathSet(DIS, pt = 'rel')) or os.path.isfile(PathSet(Ddir,pt='rel')) == True:
-        WorkDir = os.getcwd()+'\\'
+        WorkDir = os.getcwd()+S_ESC
         if os.path.isabs(path) == True:
             if WorkDir in path:
                 path = path.replace(WorkDir,'')
@@ -331,6 +337,17 @@ def Rel_Checker(path):
         return(path,pt)
     else:
         cprint(['One of the required ',DIS,' or ',Ddir,' files are missing! Consider running ','Init_LDI()',' again before continuing!'],mt=['wrn','err','wrn','err','wrn','curio','wrn'])
+
+def LinWin():
+    """
+    Literally just checks if we need \\ or / for our directories by seeing how os.getcwd() returns your working directory
+    """
+    if '\\' in os.getcwd():
+        S_ESC = '\\'
+    else:
+        S_ESC = '/'
+    return(S_ESC)
+
 
 def DataDir(**kwargs):
     """
@@ -349,7 +366,7 @@ def DataDir(**kwargs):
         How do you make sure that UVAR is updated properly? 
         Current solution is to give a cprint call telling you to load UVAR again if you make this change, or to return the newly edited file with the function...
     """ 
-    
+    S_ESC = LinWin()
     kwargdict = {'a':'act','act':'act','action':'act'}
     
     actdict =   {'a':'add','add':'add','addfile':'add',
@@ -379,7 +396,7 @@ def DataDir(**kwargs):
         
         if dID.get('y',False) == True:
             root = tk.Tk()
-            file_path = tk.filedialog.asksaveasfilename(title = 'Select/write filename for your data directories list!',defaultextension='*.*',filetypes=[('json files','*.json'),('All Files','*.*')]).replace('/','\\')    
+            file_path = tk.filedialog.asksaveasfilename(title = 'Select/write filename for your data directories list!',defaultextension='*.*',filetypes=[('json files','*.json'),('All Files','*.*')]).replace('/',S_ESC)    
             tk.Tk.withdraw(root)
             kwargs['dir'] =  file_path
         """
@@ -403,7 +420,7 @@ def DataDir(**kwargs):
     
     if kw.act == 'add':
         root = tk.Tk()
-        file_path = askdirectory(title = 'Please select a data directory to append to your data directories list!').replace('/','\\')
+        file_path = askdirectory(title = 'Please select a data directory to append to your data directories list!').replace('/',S_ESC)
         
         tk.Tk.withdraw(root)
         """
@@ -515,6 +532,7 @@ def CUV(**kwargs):
     Dictionary data saved to DataImportSettings.json or Aux_File indicated within DataImportSettings.json!
 
     """
+    S_ESC = LinWin()
     kwargdict = {'act':'act','action':'act','a':'act',
                  'co':'co','console':'co','console out':'console',
                  'path':'pathtype','pathtype':'pathtype','pt':'pathtype',
@@ -595,7 +613,7 @@ def CUV(**kwargs):
        
     if kw.act == 'load':
         root = tk.Tk()
-        file_path = askopenfilename(title = 'Select a settings file',filetypes=[('json files','*.json'),('All Files','*.*')]).replace('/','\\')    
+        file_path = askopenfilename(title = 'Select a settings file',filetypes=[('json files','*.json'),('All Files','*.*')]).replace('/',S_ESC)    
         tk.Tk.withdraw(root)
         file_path,kw.pathtype = Rel_Checker(file_path) 
         if file_path != "":

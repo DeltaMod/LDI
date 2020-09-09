@@ -55,16 +55,15 @@ plt.rcParams['figure.autolayout']  = True
     
 #Load user settings from a file using CUV
 UV = CUV(act = 'init')
-UV['Debug'] = False
 #We get a list of all files in dicts matching the number of extensions we are searching for.
-DIR,DIRPT = Rel_Checker(DataDir(act='load')['3'])
+DIR,DIRPT = Rel_Checker(DataDir(act='load')['5'])
 #DIR1 = 'C:\\Users\\vidar\\Desktop\\MD2_Contacts-24-08-2020'; DIRPT = 'abs'
 #DIR1 = "Z:\\HDD-PC\\Work\\University Work\\Physics\\PhD Local Storage\\Data\\MD2_NoContacts-24-08-2020"; DIRPT = 'abs'
 DList,NList = Get_FileList(DIR,pathtype=DIRPT, ext = (('mat','txt')),sorting='numeric')
 
 #%%
 #We probably only want to only load one matfile at a time, because otherwise we're going to quickly run out of memory!
-Dproc = {'AbsPow':[],'enw_x':[],'enw_y':[],'enw_z':[],'s_d':[],'enw_rot':[],'rel_rot':[],'current':[]}
+Dproc = {'AbsPow':[],'enw_x':[],'enw_y':[],'enw_z':[],'s_d':[],'enw_rot':[],'rel_rot':[],'current':[],'roundingradius dir':[],'GCx_span':[]}
 P_out = 8.4e-15
 
 """
@@ -75,8 +74,7 @@ P_out = 8.4e-15
 """
 I am currently thinking about a way of defining the variables in Dproc autmatically...
 """
-UV['Debug'] = True
-UV['txt_import'] = False
+
 if UV['Debug'] == False:
      
     for file in DList['.mat']:
@@ -106,6 +104,7 @@ if UV['Debug'] == False:
                     rel_rot = atdeg - (180 - enw_rot)  
                 
                 #calculating curremt: Assume lambda[0] is max power (it is probably)
+                Dproc['roundingradius dir'].append(MDat['roundingradius dir'])
                 Dproc['current'] = Dproc['AbsPow'][-1]/e
                 Dproc['s_d'].append(np.sqrt(squared_dist))
                 Dproc['enw_rot'].append(enw_rot)
@@ -113,82 +112,110 @@ if UV['Debug'] == False:
                 Dproc['enw_y'].append(MDat['ENW_y'] )
                 Dproc['enw_z'].append(MDat['ENW_z'] )
                 Dproc['rel_rot'].append(rel_rot)
+                Dproc['GCx_span'].append(MDat['GCx_span'])
+                
         except:
             None
     #%%
-    fig1 = plt.figure(1) # This ensures you can plot over the old figure
-    fig1.clf()           # This clears the old figure
+    if MDat['note'] == 'Director Rounding':
+        fig1 = plt.figure(1) # This ensures you can plot over the old figure
+        fig1.clf()           # This clears the old figure
+        
+        #2D plot
+        ax1 = fig1.gca()
+        ax1.set_title('Absorbed Power')
+        ax1.set_xlabel('Director Rounding radius [m]')
+        ax1.set_ylabel('Power Fraction: '+r'${P_{abs}}/{P_{tot}}$')
+        ax1.grid(True)
+        sca1 = ax1.scatter(Dproc['roundingradius dir'],Dproc['AbsPow'])
+
+    if MDat['note'] == 'Variable Contacts ':
+        fig1 = plt.figure(1) # This ensures you can plot over the old figure
+        fig1.clf()           # This clears the old figure
+        
+        #2D plot
+        ax1 = fig1.gca()
+        ax1.set_title('Absorbed Power')
+        ax1.set_xlabel('Gold Contact span [m]')
+        ax1.set_ylabel('Power Fraction: '+r'${P_{abs}}/{P_{tot}}$')
+        ax1.grid(True)
+        sca1 = ax1.scatter(Dproc['GCx_span'],Dproc['AbsPow'])
+
+
+    else:
+        fig1 = plt.figure(1) # This ensures you can plot over the old figure
+        fig1.clf()           # This clears the old figure
+        
+        #2D plot
+        ax1 = fig1.gca()
+        ax1.set_title('Absorbed Power with Gold Contacts')
+        ax1.set_xlabel('distance from source [m]')
+        ax1.set_ylabel('Power Fraction: '+r'${P_{abs}}/{P_{tot}}$')
+        ax1.grid(True)
+        sca1 = ax1.scatter(Dproc['s_d'],Dproc['AbsPow'],c=Dproc['rel_rot'],cmap='gnuplot')
+        cb1 = fig1.colorbar(sca1)
+        cb1.set_label('Relative Rotation '+r'$[\theta$]')
+        
+        #for n in range(0,125,5*5):
+        #    plt.plot(Dproc['s_d'][n],Dproc['AbsPow'][n],'+g')
+        
+       # for n in range(0,125,5):
+        #    plt.plot(Dproc['s_d'][n],Dproc['AbsPow'][n],'*r')
+            
+        
+        
+        LComp,LCompFi = MatLoader(DList['.mat'][0])
+        LComp['P_abs'] = np.reshape(LComp['Pabs'],[LComp['lambda'].shape[0],LComp['z'].shape[0],LComp['y'].shape[0],LComp['x'].shape[0]])   
+        #plt.imshow(np.rot90(LComp['P_abs'][0,:,:,6])) displays the same (xslice for [y,z]) as in lumerical
+        
+        LComp['P_tot'] = AbsPowIntegrator(LComp['P_abs'],LComp['x'],LComp['y'],LComp['z'],LComp['lambda'])
+        plt.figure(2)
+        plt.plot(LComp['lambda'],LComp['P_tot'])
     
-    #2D plot
-    ax1 = fig1.gca()
-    ax1.set_title('Absorbed Power with Gold Contacts')
-    ax1.set_xlabel('distance from source [m]')
-    ax1.set_ylabel('Power Fraction: '+r'${P_{abs}}/{P_{tot}}$')
-    ax1.grid(True)
-    sca1 = ax1.scatter(Dproc['s_d'],Dproc['AbsPow'],c=Dproc['rel_rot'],cmap='gnuplot')
-    cb1 = fig1.colorbar(sca1)
-    cb1.set_label('Relative Rotation '+r'$[\theta$]')
-    
-    #for n in range(0,125,5*5):
-    #    plt.plot(Dproc['s_d'][n],Dproc['AbsPow'][n],'+g')
-    
-   # for n in range(0,125,5):
-    #    plt.plot(Dproc['s_d'][n],Dproc['AbsPow'][n],'*r')
         
     
     
-    LComp,LCompFi = MatLoader(DList['.mat'][0])
-    LComp['P_abs'] = np.reshape(LComp['Pabs'],[LComp['lambda'].shape[0],LComp['z'].shape[0],LComp['y'].shape[0],LComp['x'].shape[0]])   
-    #plt.imshow(np.rot90(LComp['P_abs'][0,:,:,6])) displays the same (xslice for [y,z]) as in lumerical
-    
-    LComp['P_tot'] = AbsPowIntegrator(LComp['P_abs'],LComp['x'],LComp['y'],LComp['z'],LComp['lambda'])
-    plt.figure(2)
-    plt.plot(LComp['lambda'],LComp['P_tot'])
-
-    
-
-
-    #%%
-    PDP = []
-    PDR = []
-    PDL = []
-    PLP = []
-    PLR = []
-    PLL = []
-    TPDP = []
-    TPDL = []
-    TPDR = []
-    
-    for i in range(len(Dproc['AbsPow'])):
-        if Dproc['rel_rot'][i] < 60 or Dproc['rel_rot'][i] > 120:
-            PDP.append(Dproc['AbsPow'][i])
-            PDR.append(Dproc['rel_rot'][i])
-            PDL.append(Dproc['s_d'][i])
-        else:
-            PLP.append(Dproc['AbsPow'][i])
-            PLR.append(Dproc['rel_rot'][i])
-            PLL.append(Dproc['s_d'][i])
-        if Dproc['rel_rot'][i] < 10 or Dproc['rel_rot'][i] > 170:
-            if Dproc['enw_x'][i] == 0:
-                 TPDP.append(Dproc['AbsPow'][i])
-                 TPDR.append(Dproc['rel_rot'][i])
-                 TPDL.append(Dproc['s_d'][i])
-    
+        #%%
+        PDP = []
+        PDR = []
+        PDL = []
+        PLP = []
+        PLR = []
+        PLL = []
+        TPDP = []
+        TPDL = []
+        TPDR = []
         
-    fig3 = plt.figure(3) # This ensures you can plot over the old figure
-    fig3.clf()           # This clears the old figure
-    
-    #2D plot
-    ax3 = fig3.gca()
-    ax3.set_title('Absorbed Power with Gold Contacts')
-    ax3.set_xlabel('distance from source [m]')
-    ax3.set_ylabel('Power Fraction: '+r'${P_{abs}}/{P_{tot}}$')
-    ax3.grid(True)
-    ax3.scatter(PDL,PDP,c='cyan')
-    sca3 = ax3.scatter(PLL,PLP,c=PLR ,cmap='gnuplot')
-    ax3.scatter(TPDL,TPDP,c='green')
-    cb3 = fig3.colorbar(sca3)
-    cb3.set_label('Relative Rotation '+r'$[\theta$]')
+        for i in range(len(Dproc['AbsPow'])):
+            if Dproc['rel_rot'][i] < 60 or Dproc['rel_rot'][i] > 120:
+                PDP.append(Dproc['AbsPow'][i])
+                PDR.append(Dproc['rel_rot'][i])
+                PDL.append(Dproc['s_d'][i])
+            else:
+                PLP.append(Dproc['AbsPow'][i])
+                PLR.append(Dproc['rel_rot'][i])
+                PLL.append(Dproc['s_d'][i])
+            if Dproc['rel_rot'][i] < 10 or Dproc['rel_rot'][i] > 170:
+                if Dproc['enw_x'][i] == 0:
+                     TPDP.append(Dproc['AbsPow'][i])
+                     TPDR.append(Dproc['rel_rot'][i])
+                     TPDL.append(Dproc['s_d'][i])
+        
+            
+        fig3 = plt.figure(3) # This ensures you can plot over the old figure
+        fig3.clf()           # This clears the old figure
+        
+        #2D plot
+        ax3 = fig3.gca()
+        ax3.set_title('Absorbed Power with Gold Contacts')
+        ax3.set_xlabel('distance from source [m]')
+        ax3.set_ylabel('Power Fraction: '+r'${P_{abs}}/{P_{tot}}$')
+        ax3.grid(True)
+        ax3.scatter(PDL,PDP,c='cyan')
+        sca3 = ax3.scatter(PLL,PLP,c=PLR ,cmap='gnuplot')
+        ax3.scatter(TPDL,TPDP,c='green')
+        cb3 = fig3.colorbar(sca3)
+        cb3.set_label('Relative Rotation '+r'$[\theta$]')
 
 CUV(act = 'session',data=UV) #Saves user settings after each complete run!
 #%%
