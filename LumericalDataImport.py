@@ -72,7 +72,7 @@ P_out = 8.4e-15
 """
 
 """
-I am currently thinking about a way of defining the variables in Dproc autmatically...
+New method of importing data that does not require manual assignment of the keys in Dproc!
 """
 if UV['Debug'] == True:
     Dproc = {} # Create an empty dictionary to store your data in 
