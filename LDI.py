@@ -426,7 +426,7 @@ def DataDir(**kwargs):
         """
         WARNING! askdirectory gives out the wrong format 
         """
-        DirDict[str(len(DirDict))] = file_path
+        DirDict[str(len(DirDict)+1)] = file_path
         if file_path != '':
             jsonhandler(f = kw.ddir,d=DirDict,pt='abs', a='w')
         else:
