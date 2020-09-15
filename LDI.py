@@ -406,6 +406,28 @@ def DataDir(**kwargs):
     UV_dir,UV_pt = Rel_Checker(UV_dir)
     UV_dir = PathSet(UV_dir,p=UV_pt)
     setattr(kw,'ddir', UV_dir)
+
+    def NewDict(Dict):
+        NewDict  = {}
+        if type(Dict) == dict:
+            Dkeys= list(Dict.keys())
+            DictList = list(Dict.items())
+        elif type(Dict) == list:
+            DictList = Dict
+            pass
+        
+        #We check if the dictionary needs refreshing by comparing the keys to a sequence. If it does not follow the 1,2,3,4,5... format, this will correct it!
+        newdictbool = False
+        for i in range(len(Dkeys)):
+            if i+1 != int(Dkeys[i]):
+                newdictbool = True
+        if newdictbool == True:
+            cprint('Correcting provided dictionary to contain the right order of entires!',mt='wrn')
+            for i in range(len(Dict)):
+                NewDict[str(i+1)]  = DictList[i][1]
+            return(NewDict)
+        elif newdictbool == False:
+            return(Dict)
     
         
     try:
@@ -419,29 +441,19 @@ def DataDir(**kwargs):
     DirDict = jsonhandler(f = kw.ddir,pt='abs', a='r')
     
     if kw.act == 'add':
+        DirDict = NewDict(DirDict) #Make sure that the add command adds in the correct format
+        print(DirDict)
         root = tk.Tk()
         file_path = askdirectory(title = 'Please select a data directory to append to your data directories list!').replace('/',S_ESC)
         
         tk.Tk.withdraw(root)
-        """
-        WARNING! askdirectory gives out the wrong format 
-        """
+        #First, we need to check that the dictionary has sequential keys, and if not, we need to rebuild these!
+        
         DirDict[str(len(DirDict)+1)] = file_path
         if file_path != '':
             jsonhandler(f = kw.ddir,d=DirDict,pt='abs', a='w')
         else:
             cprint('No file selected, aborting!',mt='err')
-
-    def NewDict(Dict):
-        NewDict  = {}
-        if type(Dict) == dict:
-            Dict = list(Dict.items())
-        elif type(Dict) == list:
-            pass
-            
-        for i in range(len(Dict)):
-            NewDict[i]  = Dict[i][1]
-        return(NewDict)
     
     if kw.act == 'delete':
         listdel  = ['Select a data directory to delete:\n']
@@ -494,10 +506,11 @@ def DataDir(**kwargs):
     if kw.act == 'list':
         listshow  = ['List of currently saved directories:\n']
         cplist   = ['note'] 
+        DDN = list(DirDict.keys())
         DDI = list(DirDict.items())
         for i in range(len(DDI)):
             cplist = cplist + ['wrn','note','stat','stat']
-            listshow = listshow+ [str(i),' : ',DDI[i][1], '\n']
+            listshow = listshow+ [DDN[i],' : ',DDI[i][1], '\n']
         cplist = cplist
         cprint(listshow,mt=cplist)
         
