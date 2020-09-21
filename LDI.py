@@ -795,6 +795,20 @@ def maxRepeating(str, **kwargs):
     return(res,count)
   
 def MatLoader(file,**kwargs):
+    """
+
+    Parameters
+    ----------
+    file : TYPE
+        DESCRIPTION.
+    **kwargs : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    [.mat data, field names]
+
+    """
     cprint('=-=-=-=-=-=-=-=-=-=-=- Running: MatLoader -=-=-=-=-=-=-=-=-=-=-=',mt = 'funct')
     S_ESC = LinWin()
     kwargdict = {'txt':'txt','textfile':'txt',
@@ -908,7 +922,7 @@ def MatLoader(file,**kwargs):
     powconf  = 0 
     
     if 'trans' in FIELDLIST[0].lower():
-        cprint('Best guess is that you just loaded the data from a Transfer Box a   nalysis group!', mt = 'curio')
+        cprint('Best guess is that you just loaded the data from a Transfer Box analysis group!', mt = 'curio')
         tranconf = 1
     if any(substring in FIELDLIST[0].lower() for substring in ['pow','pabs']):
         cprint('Best guess is that you just loaded the data from a power absorption analysis group!',mt = 'curio')
@@ -982,3 +996,119 @@ def AbsPowIntegrator(Data,x,y,z,WL):
         P_tot.append(np.sum(BivarSpline))
     
     return(P_tot)
+
+"""
+
+def QuivPlot(figID,Pwr,ADD,SubSmple):
+    fig = plt.figure(figID)
+    if ADD == False:
+        fig.clf()           # This clears the old figure
+        ax = fig.add_subplot(projection='3d',proj_type='persp') # Makes a graph that covers a 2x2 size and has 3D projection
+        
+    cmap = plt.get_cmap('jet')
+    #3D plot
+    for name in Pwr.keys():
+        Pwr[name] = np.asarray(Pwr[name])
+    for n in range(0,len(Pwr['xc']),SubSmple):
+        ax.quiver(Pwr['xc'][n],Pwr['yc'][n],Pwr['zc'][n],Pwr['norm'][n]*Pwr['Px'][n],Pwr['norm'][n]*Pwr['Py'][n],Pwr['norm'][n]*Pwr['Pz'][n],color=cmap(Pwr['L'][n]/np.max(Pwr['L'])))
+  
+"""
+
+def ezquiver(data,**kwargs):
+    kwargdict = {'f_id':'fid','fid':'fid','fignum':'fid','fi':'fid'}
+    kw = KwargEval(kwargs, kwargdict,fid=None)
+    
+    if kw.fid !=None:
+        if len(plt.get_fignums()) != 0:
+            kw.fid = plt.get_fignums()[-1]+1
+        else:
+            kw.fid = 1
+            
+    fig = plt.figure(kw.fid)
+    fig.clf()
+
+    ax = fig.add_subplot(projection='3d',proj_type='persp') # Makes a graph that covers a 2x2 size and has 3D projection        
+    ax.quiver(data)
+        
+
+def txtparse(**kwargs):
+    kwargdict = {'file':'file','fn':'file','f':'file',
+                 'fd':'fd','ask':'fd'}
+    kw = KwargEval(kwargs, kwargdict,file=None)
+    S_ESC = LinWin()
+    if kw.file == None:
+        root = tk.Tk()
+        file_path = askopenfilename(title = 'Select a file to load',filetypes=[('txt file','*.txt'),('All Files','*.*')]).replace('/',S_ESC)    
+        tk.Tk.withdraw(root)
+        kw.file,kw.pathtype = Rel_Checker(file_path)
+    else:
+        kw.file,kw.pathtype = Rel_Checker(kw.file)
+    Raw = {}
+    top_dict = []
+    with open(kw.file,'r') as f:
+        for line in f:
+            if line.startswith('[') == True and line.endswith(']\n') == True:
+                top_dict.append(line)
+                Raw[top_dict[-1].split('[')[-1].split(']')[0]] = []
+            if top_dict[-1] not in line:
+                linestr = line.strip()
+                if len(linestr) != 0:
+                    Raw[top_dict[-1].split('[')[-1].split(']')[0]].append(linestr)
+        out_dict = {}
+        for key in Raw.keys():
+            skdict = {}
+            for item in Raw[key]:
+                if len(item.split('=')) !=2:
+                    if type(skdict) == dict:
+                        skdict = []
+                    delim = ''.join([' ' for n in range(maxRepeating(item,guess=' ')[1])])  
+                    field_item = item.split(delim)
+                    skdict.append(field_item)
+                    
+                elif len(item.split('=')) == 2:
+                    try: 
+                        field_item = item.split('=')
+                        skdict[field_item[0]] = field_item[1]
+                        spctot =  maxRepeating(field_item[1],guess=' ')[1]
+                        if spctot >= 1:
+                            try:
+                                delim = ''.join([' ' for n in range(maxRepeating(item,guess=' ')[1])])  
+                                float(field_item[1].split(delim)[0])
+                                ftrue = True
+                            except:
+                                ftrue = False
+                        if ftrue == True:
+                            skdict[field_item[0]] = np.array(field_item[1].split(delim),dtype='float')
+                        else:
+                            skdict[field_item[0]] = field_item[1]
+                    except:
+                        if type(skdict) == dict and '=' in item:
+                            skdict[item.split('=')[0]] = item.split('=')[1]
+
+            if type(skdict) == list:
+                skdict = np.array(skdict)
+            out_dict[key] = skdict 
+                 
+                    
+                    
+    return(out_dict)
+    
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+    

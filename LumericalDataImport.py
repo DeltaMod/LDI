@@ -154,7 +154,7 @@ if UV['Debug'] == False:
                 Dproc['enw_y'].append(MDat['ENW_y'] )
                 Dproc['enw_z'].append(MDat['ENW_z'] )
                 Dproc['rel_rot'].append(rel_rot)
-                Dproc['GCx_span'].append(MDat['GCx_span'])
+                Dproc['GCx_span'].append(MDat['GCx_span']) 
                 
         except:
             None
