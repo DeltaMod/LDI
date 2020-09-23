@@ -1032,8 +1032,7 @@ def ezquiver(data,**kwargs):
         
 
 def txtparse(**kwargs):
-    kwargdict = {'file':'file','fn':'file','f':'file',
-                 'fd':'fd','ask':'fd'}
+    kwargdict = {'file':'file','fn':'file','f':'file'}
     kw = KwargEval(kwargs, kwargdict,file=None)
     S_ESC = LinWin()
     if kw.file == None:
