@@ -389,17 +389,7 @@ def DataDir(**kwargs):
         kwID = input(cprint(kwFull,mt=kwmt,tr=True))
         
         kwargs = {'act':act_keydict[int(kwID)]}
-        
-        """
-        This is the function call that needs to go into CUV later!
-        dID  = {input(cprint(['Do you want to set a custom directories file?', '[y/n]:'],mt = ['note','curio'],jc=['\n',''],tr = True)):True}
-        
-        if dID.get('y',False) == True:
-            root = tk.Tk()
-            file_path = tk.filedialog.asksaveasfilename(title = 'Select/write filename for your data directories list!',defaultextension='*.*',filetypes=[('json files','*.json'),('All Files','*.*')]).replace('/',S_ESC)    
-            tk.Tk.withdraw(root)
-            kwargs['dir'] =  file_path
-        """
+    
     kw = KwargEval(kwargs, kwargdict, act=False)    
     
     UV_dir = CUV(act='init',co=False)['Data_Directories_File']
@@ -1015,6 +1005,13 @@ def QuivPlot(figID,Pwr,ADD,SubSmple):
 """
 
 def ezquiver(data,**kwargs):
+    """
+    What should this function do?
+    Accept a list of vectors to return the fig handle, and axis, of a plotted quiver plot.
+    Problems:
+        You cannot use -self-, because this returns __main__ instead of the figure.
+
+    """
     kwargdict = {'f_id':'fid','fid':'fid','fignum':'fid','fi':'fid'}
     kw = KwargEval(kwargs, kwargdict,fid=None)
     
@@ -1093,10 +1090,37 @@ def txtparse(**kwargs):
     return(out_dict)
     
         
+ 
+class ctest(object):
+    """
+    goal of testing:
+    Plot.fig = plt.figure(num)
+    """
+    def __init__(self,**kwargs): #Initialise by assigning a figure, creating an axis, and selecting the axis
+        """
+        kwargs:
+            ==============
+            gspec: uses matplotlib gridspec, this allows you to define how many subplot grid spaces you want to include in your plot.
+                format: [<int: row>,<int: col>]
+            
+        """
+        kwargdict = {'f_id':'fid','fid':'fid','fignum':'fid','fi':'fid',
+                     'gridspec':'gspec','colrow':'gspec','gspec':'gspec','gs':'gspec'}
+        kw = KwargEval(kwargs,kwargdict,gspec=None,fid=None)        
         
+        if kw.fid !=None:
+            if len(plt.get_fignums()) != 0:
+                kw.fid = plt.get_fignums()[-1]+1
+            else:
+                kw.fid = 1
+    
+        self.fig = plt.figure(kw.fid)
+        self.fig.clf()           # This clears the old figure
         
+        if kw.gpsec != None:
+            self.gspec = matplotlib.gridspec.GridSpec(kw.gspec[0],kw.gspec[1]) #This makes a 3x2 sized grid
         
-        
+    
         
         
         
