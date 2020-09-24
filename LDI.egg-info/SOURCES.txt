@@ -1,8 +1,0 @@
-LDI.py
-README.md
-setup.py
-LDI.egg-info/PKG-INFO
-LDI.egg-info/SOURCES.txt
-LDI.egg-info/dependency_links.txt
-LDI.egg-info/requires.txt
-LDI.egg-info/top_level.txt
