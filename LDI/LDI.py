@@ -1121,7 +1121,7 @@ class ezplot(object):
                 kwargdict[key] = key
         kw = KwargEval(kwargs,kwargdict,gspec=[1,1],fid=None,spd=None)        
         
-        if kw.fid !=None:
+        if kw.fid == None:
             if len(plt.get_fignums()) != 0:
                 kw.fid = plt.get_fignums()[-1]+1
             else:
