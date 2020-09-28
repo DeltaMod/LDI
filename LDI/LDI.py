@@ -70,7 +70,7 @@ def KwargEval(fkwargs,kwargdict,**kwargs):
                 setattr(kwclass,kwargdict[kwarg.lower()], kval)
                 
             except:
-                cprint(['kwarg =',kwarg,'does not exist!',' Skipping kwarg eval.'],mt = ['wrn','err','wrn','note'])
+                cprint(['kwarg =',kwarg,'does not exist!',' Skipping kwarg eval.'],mt = ['wrn','err','wrn','note'],co=kwclass.co)
     #Setting the class kwargs from the function kwargs!     
     for kwarg in fkwargs:
         fkval = fkwargs.get(kwarg,False)
@@ -1095,31 +1095,76 @@ class ctest(object):
     """
     goal of testing:
     Plot.fig = plt.figure(num)
+    Plot.add_subplot => fig.add_subplot => Plot.ax[ind] = ax_new
     """
     def __init__(self,**kwargs): #Initialise by assigning a figure, creating an axis, and selecting the axis
         """
         kwargs:
             ==============
+            fid:  the figure ID - can be set manually if you want to overwrite a specific figure, but will be set automatically otherwise
+                format: [<int: fid>]
             gspec: uses matplotlib gridspec, this allows you to define how many subplot grid spaces you want to include in your plot.
                 format: [<int: row>,<int: col>]
-            
+            spd: defines how many subplots you want, and how you want them arranged. The total number subplots cannot exceed the total number of gpec grids
+                format: (all are <int>:) ([r1_min,r1_max,c1_min,c1_max],[r2_min,r2_max,c2_min,c2_max],...)
+                If this is not set, then it will be assumed that you want the same number of axes as you have grid spaces in your gspec.
+            pprop: 
         """
         kwargdict = {'f_id':'fid','fid':'fid','fignum':'fid','fi':'fid',
-                     'gridspec':'gspec','colrow':'gspec','gspec':'gspec','gs':'gspec'}
-        kw = KwargEval(kwargs,kwargdict,gspec=None,fid=None)        
+                     'gridspec':'gspec','colrow':'gspec','gspec':'gspec','gs':'gspec',
+                     'spd':'spd','sub_plot_dim':'spd',
+                     'pprop':'pprop','plot_prop':'pprop','pp':'pprop'}
+        kuniq = np.unique(list(kwargdict.keys()))
+        
+        for key in kwargs.keys():
+            if key not in kuniq:
+                kwargdict[key] = key
+        kw = KwargEval(kwargs,kwargdict,gspec=[1,1],fid=None,spd=None)        
         
         if kw.fid !=None:
             if len(plt.get_fignums()) != 0:
                 kw.fid = plt.get_fignums()[-1]+1
             else:
                 kw.fid = 1
-    
         self.fig = plt.figure(kw.fid)
-        self.fig.clf()           # This clears the old figure
+        self.fig.fid = kw.fid
+        self.fig.clf()           # This clears the old figure - clearing will only be done if: you aer initialising using funct on it's own, or if specifying 'new' in kwargs when plotting in axis. 
         
-        if kw.gpsec != None:
-            self.gspec = matplotlib.gridspec.GridSpec(kw.gspec[0],kw.gspec[1]) #This makes a 3x2 sized grid
+        #define the size of the grid intended for plotting: Default is 1x1 (as in, only one plotting grid available)
         
+        self.gspec = matplotlib.gridspec.GridSpec(kw.gspec[0],kw.gspec[1]) #This makes a 3x2 sized grid
+        """
+        #We test to see if there is an overlap - or, do we need to test this? It will throw an error regardless?
+        Tot_coord = []        
+        for spd in kw.spd:
+            for x in list(range(spd[0],spd[1]+1)):
+                for y in list(range(spd[2],spd[3]+1)):
+                    Tot_coord.append([x,y])
+        """
+        self.sps = []
+        self.ax  = {} 
+        self.Pkwargs = {}
+        for key,val in kwargs.items():
+            if key not in kuniq:
+                self.Pkwargs[key] = val
+                
+        if kw.spd != None:
+            for spd in kw.spd:
+                self.sps.append((slice(spd[0],spd[1]),slice(spd[2],spd[3])))
+            
+            for i in range(len(self.sps)):
+                self.ax[str(i+1)] =  self.fig.add_subplot(self.gspec[self.sps[i][0],self.sps[i][0]],**self.Pkwargs)
+        else:
+            for i in range(kw.gspec[0]*kw.gspec[1]):
+                self.ax[str(i+1)] =  self.fig.add_subplot(self.gspec[i],**self.Pkwargs)
+                
+                
+            
+    def quiver(self,data,**kwargs):
+        """
+        This function makes a quiver plot in the selected AXIS! (so self.ax['int'].quiver(data=[x],[y],**kwargs)
+        """
+        pass
     
         
         
