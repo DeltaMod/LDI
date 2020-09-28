@@ -1108,12 +1108,13 @@ class ezplot(object):
             spd: defines how many subplots you want, and how you want them arranged. The total number subplots cannot exceed the total number of gpec grids
                 format: (all are <int>:) ([r1_min,r1_max,c1_min,c1_max],[r2_min,r2_max,c2_min,c2_max],...)
                 If this is not set, then it will be assumed that you want the same number of axes as you have grid spaces in your gspec.
-            pprop: 
+            
+            Note: any kwargs that is accepted by a plot function will be included as well, so any errors that get raised will come from a kwarg that is not accepted by an add_subplot function.
+            for instance: including projection='3d' will change the subplot projection for all plots - so only use this if you need a uniform plot format for all plots - otherwise, change it later using self.ax[n].set_prop instead.
         """
         kwargdict = {'f_id':'fid','fid':'fid','fignum':'fid','fi':'fid',
                      'gridspec':'gspec','colrow':'gspec','gspec':'gspec','gs':'gspec',
-                     'spd':'spd','sub_plot_dim':'spd',
-                     'pprop':'pprop','plot_prop':'pprop','pp':'pprop'}
+                     'spd':'spd','sub_plot_dim':'spd'}
         kuniq = np.unique(list(kwargdict.keys()))
         
         for key in kwargs.keys():
