@@ -1091,7 +1091,7 @@ def txtparse(**kwargs):
     
         
  
-class ctest(object):
+class ezplot(object):
     """
     goal of testing:
     Plot.fig = plt.figure(num)
@@ -1153,16 +1153,16 @@ class ctest(object):
                 self.sps.append((slice(spd[0],spd[1]),slice(spd[2],spd[3])))
             
             for i in range(len(self.sps)):
-                self.ax[str(i+1)] =  self.fig.add_subplot(self.gspec[self.sps[i][0],self.sps[i][0]],**self.Pkwargs)
+                self.ax[i] =  self.fig.add_subplot(self.gspec[self.sps[i][0],self.sps[i][0]],**self.Pkwargs)
         else:
             for i in range(kw.gspec[0]*kw.gspec[1]):
-                self.ax[str(i+1)] =  self.fig.add_subplot(self.gspec[i],**self.Pkwargs)
+                self.ax[i] =  self.fig.add_subplot(self.gspec[i],**self.Pkwargs)
                 
                 
             
     def quiver(self,data,**kwargs):
         """
-        This function makes a quiver plot in the selected AXIS! (so self.ax['int'].quiver(data=[x],[y],**kwargs)
+        This function makes a quiver plot in the selected AXIS! (so self.ax[int].quiver(data=[x],[y],**kwargs)
         """
         pass
     
