@@ -1112,7 +1112,21 @@ class ezplot(object):
             
             Note: any kwargs that is accepted by a plot function will be included as well, so any errors that get raised will come from a kwarg that is not accepted by an add_subplot function.
             for instance: including projection='3d' will change the subplot projection for all plots - so only use this if you need a uniform plot format for all plots - otherwise, change it later using self.ax[n].set_prop instead.
-        """
+       
+           General Use case examples:
+               Creating a new figure with only one axis - and no figure ID:
+                   FIG = ezplot()    
+                   FIG.ax[0].plot(x,y)
+               Creating a new figure with 4 axes, a specific fid, and a 3D projection in each.
+                   FIG = ezplot(gspec=[2,2],fid=1,projection='3d')
+                   FIG.ax[0].title_set('ax0'); FIG.ax[1].title_set('ax1'); FIG.ax[2].title_set('ax2'); FIG.ax[3].title_set('ax3')
+                   
+               fields you can access:
+                   FIG.fig    = figure handle
+                   FIG.fid    = figure ID
+                   FIG.ax[n]  = axes handles (list from 0 to n)
+            All plt.plot parameters can be passed with **kwargs, so if you want a specific window size, resolution, font size, title, etc. you can pass them in the command as you would normally
+       """
         kwargdict = {'f_id':'fid','fid':'fid','fignum':'fid','fi':'fid',
                      'gridspec':'gspec','colrow':'gspec','gspec':'gspec','gs':'gspec',
                      'spd':'spd','sub_plot_dim':'spd'}
