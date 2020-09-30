@@ -60,6 +60,7 @@ def KwargEval(fkwargs,kwargdict,**kwargs):
     """
     #create kwarg class 
     class kwclass:
+        co = True
         pass
     
     #This part initialises the "default" values inside of kwclass using **kwargs. If you don't need any defaults, then you can ignore this.
@@ -1162,9 +1163,57 @@ class ezplot(object):
                 
             
     def quiver(self,data,**kwargs):
-        """
+        """        
         This function makes a quiver plot in the selected AXIS! (so self.ax[int].quiver(data=[x],[y],**kwargs)
+        data must be in the format: [x,y,z,xdir,ydir,zdir] where x,y,z are vector locations, and xdir,ydir,zdir give the magnitude and direction of the vector.
+        x/y/z/xdir/ydir/zdir all need to come in the same np.array shape - buy ANY number of 4d/3d/2d/1d matrices are supported. 
+        This means that even if your x.shape = [50,50,50], this function will create a list of appropriate vectors to plot it correctly!
+        
+        this function also requires an ax_id (this is the subplot ID given as a list from sp1 -> spN). If this is not provided, the function will look for empty plots to fill, and if no empty plots are found, it will plot in the first plot.
         """
+        
+        kwargdict = {'ax_id':'ax_id','axisid':'ax_id','axid':'ax_id'}
+        kuniq = np.unique(list(kwargdict.keys()))
+        
+        for key in kwargs.keys():
+            if key not in kuniq:
+                kwargdict[key] = key
+        kw = KwargEval(kwargs,kwargdict,ax_id = None)        
+        
+        data2 = []
+        for dat in data:
+            if type(dat) == list:
+                data2.append(np.array(dat))
+            
+            elif type(dat) == np.ndarray:
+                data2.append(np.array(dat))
+        
+        if len(data2[0].shape) != 1:
+            if data2[0].shape == data2[1].shape == data2[2].shape:
+                vnum = np.prod(data2[0].shape)
+                for i in range(len(data2)):
+                    data2[i] = data2[i].reshape(vnum)
+
+        x = data2[0]; y = data2[1]; z = data2[2]
+        xdir = data2[3]; ydir = data2[4]; zdir = data2[5]                
+                
+            
+        if kw.ax_id == None:
+            for i in range(len(self.ax)):
+                if self.ax[i].has_data() == False:
+                    kw.ax_id = i
+                    break
+                
+        if kw.ax_id == None:
+            kw.ax_id = 0
+        
+        
+        self.Pkwargs = {}
+        for key,val in kwargs.items():
+            if key not in kuniq:
+                self.Pkwargs[key] = val
+                
+        self.ax[kw.ax_id].quiver(x,y,z,xdir,ydir,zdir, **self.Pkwargs)
         pass
     
         
