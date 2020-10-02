@@ -61,7 +61,7 @@ def visit_ImportFrom(node):
     # if node.module is missing it's a "from . import ..." statement
     # if level > 0 it's a "from .submodule import ..." statement
     if node.module is not None and node.level == 0:
-        if "mpl_toolkits" or "json" not in node.module.split(".")[0]:
+        if "mpl_toolkits" or "json" or "time" not in node.module.split(".")[0]:
             modules.add(node.module.split(".")[0])
         
 
