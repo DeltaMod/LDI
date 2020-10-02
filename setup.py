@@ -88,7 +88,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="LDI-DeltaMod",
-    version="v0.0.1d",
+    version="v0.0.a1",
     packages=find_packages(),
     scripts=[TrgtScr],
 
