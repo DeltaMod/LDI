@@ -61,7 +61,7 @@ def visit_ImportFrom(node):
     # if node.module is missing it's a "from . import ..." statement
     # if level > 0 it's a "from .submodule import ..." statement
     if node.module is not None and node.level == 0:
-        if "mpl_toolkits" or "json" or "time" not in node.module.split(".")[0]:
+        if node.module.split(".")[0] not in ["mpl_toolkits","json","time","sys","os","tkinter"]:
             modules.add(node.module.split(".")[0])
         
 
@@ -82,7 +82,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="LDI-DeltaMod",
-    version="0.0.1b",
+    version="0.0.1c",
     packages=find_packages(),
     scripts=[TrgtScr],
 
