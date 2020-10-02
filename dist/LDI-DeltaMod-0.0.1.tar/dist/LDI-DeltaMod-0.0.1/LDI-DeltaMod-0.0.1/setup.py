@@ -61,10 +61,7 @@ def visit_ImportFrom(node):
     # if node.module is missing it's a "from . import ..." statement
     # if level > 0 it's a "from .submodule import ..." statement
     if node.module is not None and node.level == 0:
-        if "mpl_toolkits" not in node.module.split(".")[0]:
-            modules.add(node.module.split(".")[0])
-        
-
+        modules.add(node.module.split(".")[0])
 
 node_iter = ast.NodeVisitor()
 node_iter.visit_Import = visit_Import
@@ -89,7 +86,7 @@ setup(
     # Project uses reStructuredText, so ensure that the docutils get
     # installed or upgraded on the target machine
     install_requires=[list(modules)+["docutils>=0.3"]],
-    
+
     package_data={
         # If any package contains *.txt or *.rst files, include them:
         "": ["*.txt", "*.json"],

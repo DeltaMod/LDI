@@ -1,0 +1,14 @@
+mpl_toolkits
+tkinter
+numpy
+os
+h5py
+matplotlib
+natsort
+scipy
+sys
+collections
+json
+hdf5storage
+time
+docutils>=0.3

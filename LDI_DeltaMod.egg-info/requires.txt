@@ -1,0 +1,13 @@
+matplotlib
+tkinter
+os
+hdf5storage
+collections
+sys
+numpy
+json
+natsort
+h5py
+time
+scipy
+docutils>=0.3
