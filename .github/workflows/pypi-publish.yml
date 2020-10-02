@@ -6,7 +6,7 @@ on: push
 jobs:
   deploy:
 
-    runs-on: [windows-latest, ubuntu-latest]
+    runs-on: [self-hosted, windows-latest]
 
     steps:
     - uses: actions/checkout@v2
