@@ -1,4 +1,5 @@
 name: Publish a Python distribution to PyPI
+on: push
 uses: pypa/gh-action-pypi-publish@master
 with:
   user:     ${{ secrets.PYPI_USERNAME }}
