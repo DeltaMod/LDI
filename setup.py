@@ -68,8 +68,7 @@ def module_filter(modules):
     for module in mod2:
          if module in ["mpl_toolkits","json","time","sys","os","tkinter","collections"]:
              modules.remove(module)
-         else:
-             print(module)
+
     return(list(modules))
         
 
