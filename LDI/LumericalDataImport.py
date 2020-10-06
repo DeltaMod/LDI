@@ -56,7 +56,7 @@ plt.rcParams['figure.autolayout']  = True
 #Load user settings from a file using CUV
 UV = CUV(act = 'init')
 #We get a list of all files in dicts matching the number of extensions we are searching for.
-DIR,DIRPT = Rel_Checker(DataDir(act='load')['6'])
+DIR,DIRPT = Rel_Checker(DataDir(act='load')['7'])
 #DIR1 = 'C:\\Users\\vidar\\Desktop\\MD2_Contacts-24-08-2020'; DIRPT = 'abs'
 #DIR1 = "Z:\\HDD-PC\\Work\\University Work\\Physics\\PhD Local Storage\\Data\\MD2_NoContacts-24-08-2020"; DIRPT = 'abs'
 DList,NList = Get_FileList(DIR,pathtype=DIRPT, ext = (('mat','txt')),sorting='numeric')
