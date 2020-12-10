@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+0# -*- coding: utf-8 -*-
 """
 Lumerical Data Handling
 Created on Fri Feb  7 12:14:09 2020
@@ -56,7 +56,7 @@ plt.rcParams['figure.autolayout']  = True
 #Load user settings from a file using CUV
 UV = CUV(act = 'init')
 #We get a list of all files in dicts matching the number of extensions we are searching for.
-DIR,DIRPT = Rel_Checker(DataDir(act='load')['7'])
+DIR,DIRPT = Rel_Checker(DataDir(act='load')['4'])
 #DIR1 = 'C:\\Users\\vidar\\Desktop\\MD2_Contacts-24-08-2020'; DIRPT = 'abs'
 #DIR1 = "Z:\\HDD-PC\\Work\\University Work\\Physics\\PhD Local Storage\\Data\\MD2_NoContacts-24-08-2020"; DIRPT = 'abs'
 DList,NList = Get_FileList(DIR,pathtype=DIRPT, ext = (('mat','txt')),sorting='numeric')
@@ -82,33 +82,42 @@ if UV['Debug'] == False:
             
             #First, add additional variables that need specific calculation manually into MDat (so Prog_Dict_Importer can grab them)
             if UV['txt_import'] == True:
-                anw_l = np.array([0,0,MDat['ENW_z']])
-                enw_l = np.array([MDat['ENW_x'],MDat['ENW_y'],MDat['ENW_z']])
-                squared_dist = np.sum((anw_l-enw_l)**2, axis=0)
-                enw_rot = MDat['ENW_z_rot'] 
+                if "ENW_x" and "ENW_y" and "ENW_z" in MDat.keys():
+                    anw_l = np.array([0,0,MDat['ENW_z']])
+                    enw_l = np.array([MDat['ENW_x'],MDat['ENW_y'],MDat['ENW_z']])
+                    squared_dist = np.sum((anw_l-enw_l)**2, axis=0)
+                
+                if "ENW_z_rot" in MDat.keys():
+                    enw_rot = MDat['ENW_z_rot'] 
                 
                 
-                if MDat['ENW_y'] == 0:
-                    atdeg =  0
-                else:
-                    atdeg = np.degrees(np.arctan(abs(MDat['ENW_x']/MDat['ENW_y']))) 
+                    if MDat['ENW_y'] == 0:
+                        atdeg =  0
+                    else:
+                        atdeg = np.degrees(np.arctan(abs(MDat['ENW_x']/MDat['ENW_y']))) 
                 
-                rel_rot = enw_rot + atdeg
-                
-                if rel_rot>180:
-                    rel_rot = atdeg - (180 - enw_rot)  
-                MDat['rel_rot'] = rel_rot
-                
+                    rel_rot = enw_rot + atdeg
+                    
+                    if rel_rot>180:
+                        rel_rot = atdeg - (180 - enw_rot)  
+                    MDat['rel_rot'] = rel_rot
+                    
+                    MDat['s_d'] = np.sqrt(squared_dist)
+            
             #Then do calculations on the longer data sets and store only the specific single data needed in MDat
-            MDat['P_abs'] = np.reshape(MDat['Pabs'],[MDat['lambda'].shape[0],MDat['z'].shape[0],MDat['y'].shape[0],MDat['x'].shape[0]])
-            cprint(['Now processing file: ',str(file)],mt='curio')
-            
-            MDat['P_tot']  = AbsPowIntegrator(MDat['P_abs'],MDat['x'],MDat['y'],MDat['z'],MDat['lambda'])
-            MDat['AbsPow'] = max(MDat['P_tot'])
-            
+            if 'Pabs' in MDat.keys():
+                MDat['P_abs'] = np.reshape(MDat['Pabs'],[MDat['lambda'].shape[0],MDat['z'].shape[0],MDat['y'].shape[0],MDat['x'].shape[0]])
+                cprint(['Now processing file: ',str(file)],mt='curio')
+            if "Pabs_total" in MDat.keys():
+                MDat['P_tot']  = AbsPowIntegrator(MDat['P_abs'],MDat['x'],MDat['y'],MDat['z'],MDat['lambda'])
+                MDat['AbsPow'] = max(MDat['P_tot'])
+        except:
+            pass
+        try:
+            MDat['Pabs'] #this line is used to make sure that the transfer box results do not get placed into the same Dproc. In the future, Dproc will be set up to separate data based on what it thinks it is!
             #Use Prog_Dict_Importer to append remainder data that has a length smaller than ml=int *default 1 to Dproc
             Dproc = Prog_Dict_Importer(Dproc,MDat)
-            
+        
         except:
             pass
 
@@ -144,7 +153,7 @@ if UV['Debug'] == False:
                 
 #                 if rel_rot>180:
 #                     rel_rot = atdeg - (180 - enw_rot)  
-                
+                  
 #                 #calculating curremt: Assume lambda[0] is max power (it is probably)
 #                 Dproc['roundingradius dir'].append(MDat['roundingradius dir'])
 #                 Dproc['current'] = Dproc['AbsPow'][-1]/e
@@ -171,7 +180,7 @@ if UV['Debug'] == False:
         ax1.set_ylabel('Power Fraction: '+r'${P_{abs}}/{P_{tot}}$')
         ax1.grid(True)
         sca1 = ax1.scatter(Dproc['roundingradius dir'],Dproc['AbsPow'])
-
+        ax1.legend(['Multi-Dipole'])
     elif MDat['note'] == 'Multi Dipole Director Rounding':
         fig1 = plt.figure(1) # This ensures you can plot over the old figure
         fig1.clf()           # This clears the old figure
@@ -184,7 +193,7 @@ if UV['Debug'] == False:
         ax1.grid(True)
         sca1 = ax1.scatter(Dproc['roundingradius dir'],Dproc['AbsPow'])
         
-    elif MDat['note'] == 'Variable Contacts ':
+    elif MDat['note'] == 'Variable Contacts ' or "pabs variable contacts":
         fig1 = plt.figure(1) # This ensures you can plot over the old figure
         fig1.clf()           # This clears the old figure
         
@@ -196,14 +205,53 @@ if UV['Debug'] == False:
         ax1.grid(True)
         sca1 = ax1.scatter(Dproc['GCx_span'],Dproc['AbsPow'])
 
-
+    
+    elif MDat['note'] == "Director Separation":
+        fig1 = plt.figure(1) # This ensures you can plot over the old figure
+        fig1.clf()           # This clears the old figure
+        
+        
+        NWuniq = list(np.unique(Dproc['NW sep dir']))
+        Dproc['dir sep p.NW'] = [[] for n in range(len(NWuniq))]
+        Dproc['abspow p.NW']     = [[] for n in range(len(NWuniq))]
+        for i in range(0,len(Dproc['dir sep'])-1):
+            NWind = NWuniq.index(Dproc['NW sep dir'][i])
+            Dproc['dir sep p.NW'][NWind].append(Dproc['dir sep'][i])
+            Dproc['abspow p.NW'][NWind].append(Dproc['AbsPow'][i])
+            
+        #2D plot
+        ax1 = fig1.gca()
+        ax1.set_title('Absorbed Power')
+        ax1.set_xlabel('Director Separation [m]')
+        ax1.set_ylabel('Power Fraction: '+r'${P_{abs}}/{P_{tot}}$')
+        ax1.grid(True)
+        for i in range(len(NWuniq)):
+            sca1 = ax1.scatter(Dproc['dir sep p.NW'][i],Dproc['abspow p.NW'][i])
+        lgnd1 = ['NW sep = ' + str(nq) +'m' for nq in NWuniq]
+        
+        
+        lmbd = [910e-9*1/n for n in range(2,6)]
+        for i in range(len(lmbd)):    
+            ax1.plot([lmbd[i],lmbd[i]],[min(min(Dproc['abspow p.NW'])),max(max(Dproc['abspow p.NW']))])
+        
+        ax1.plot([min(Dproc['dir sep']),max(Dproc['dir sep'])],[Dproc['AbsPow'][-1],Dproc['AbsPow'][-1]])
+        lgnd2 = ['$\lambda/$'+str(n) for n in range(2,6)]
+        
+        ax1.legend(lgnd2+lgnd1)
     else:
+        
+        
+        if "no contacts" in MDat['note']:
+            title = "Absorbed Power without Gold Contacts"
+        else:
+            title = "Absorbed Power with Gold Contacts"
+            
         fig1 = plt.figure(1) # This ensures you can plot over the old figure
         fig1.clf()           # This clears the old figure
         
         #2D plot
         ax1 = fig1.gca()
-        ax1.set_title('Absorbed Power with Gold Contacts')
+        ax1.set_title(title)
         ax1.set_xlabel('distance from source [m]')
         ax1.set_ylabel('Power Fraction: '+r'${P_{abs}}/{P_{tot}}$')
         ax1.grid(True)
@@ -230,7 +278,7 @@ if UV['Debug'] == False:
         
     
     
-        #%%
+        
         PDP = []
         PDR = []
         PDL = []
@@ -251,7 +299,7 @@ if UV['Debug'] == False:
                 PLR.append(Dproc['rel_rot'][i])
                 PLL.append(Dproc['s_d'][i])
             if Dproc['rel_rot'][i] < 10 or Dproc['rel_rot'][i] > 170:
-                if Dproc['enw_x'][i] == 0:
+                if Dproc['ENW_x'][i] == 0:
                      TPDP.append(Dproc['AbsPow'][i])
                      TPDR.append(Dproc['rel_rot'][i])
                      TPDL.append(Dproc['s_d'][i])
@@ -260,9 +308,10 @@ if UV['Debug'] == False:
         fig3 = plt.figure(3) # This ensures you can plot over the old figure
         fig3.clf()           # This clears the old figure
         
+        
         #2D plot
         ax3 = fig3.gca()
-        ax3.set_title('Absorbed Power with Gold Contacts')
+        ax3.set_title(title)
         ax3.set_xlabel('distance from source [m]')
         ax3.set_ylabel('Power Fraction: '+r'${P_{abs}}/{P_{tot}}$')
         ax3.grid(True)

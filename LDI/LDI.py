@@ -811,10 +811,11 @@ def MatLoader(file,**kwargs):
     #Mat File Loading
     FIELDDICT = {}
     f = h5py.File(file,'r')
-    
+   
     for k, v in f.items():
         FIELDDICT[k] = np.array(v)
     FIELDLIST = list(FIELDDICT.keys()) 
+    
     data = {}
     dfields = []
     if '#refs#' in FIELDLIST: 
@@ -838,7 +839,6 @@ def MatLoader(file,**kwargs):
                 oldshape    = data[field].shape
                 data[field] = data[field][0]
                 cprint(['corrected','data['+str(field)+'].shape','from',str(oldshape),'to',str(data[field].shape)],mt=['note','status','note','wrn','note','status'])
-    
     mname = file.split(S_ESC)[-1]
     data['matfilepath'] = file
     data['matname'] = mname
