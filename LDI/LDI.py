@@ -25,7 +25,47 @@ from scipy import interpolate
 import json
 from collections import Counter
 import natsort
+import csv
 
+
+def npy_filehandler(**kwargs):
+    kwargdict = {'f':'f','fn':'f','f':'f',
+                 'd':'d','dat':'d','data':'d',
+                 'a':'a','act':'a','a':'a',
+                 'p':'pt','pt':'pt','pathtype':'pt'}
+    
+    kw = KwargEval(kwargs, kwargdict, pt='rel',d=None,f=None,a=None)
+    
+    if os.path.exists(kw.f) == False:
+        kw.f,kw.pt = Rel_Checker(kw.f)
+    
+    if kw.a in ['s','save']:
+        np.save(kw.f,kw.d)
+        
+    if kw.a in ['l','load']:
+        try:
+            data = np.load(kw.f)
+        except ValueError:
+            data = np.load(kw.f,allow_pickle=True)
+        except FileNotFoundError:
+            if ".npy" not in kw.f:
+                try:
+                    data = np.load(kw.f+'.npy',allow_pickle=True)
+                except:
+                    cprint('No file found with that name')
+        
+        if len(data.shape) == 0 and type(data) != dict:
+            data = dict(data.item())
+        
+        return(data)
+            
+
+
+def Bulk_CSV_Load(filename):
+    if ".csv" not in filename:
+        filename = filename+'.csv'
+    key_value = np.loadtxt(filename, delimiter=",")
+    return({ k:v for k,v in key_value })
 
 def Init_LDI():
     """
@@ -784,7 +824,63 @@ def maxRepeating(str, **kwargs):
             count = cur_count 
             res = str[i] 
     return(res,count)
-  
+
+def txt_dict_loader(txtfile,**kwargs):
+    S_ESC = LinWin()
+    kwargdict = {'dir':'path','directory':'path','path':'path','p':'path',
+                 'esc':'esc','escape_character':'esc','e':'esc','esc_char':'esc'}
+    kw = KwargEval(kwargs, kwargdict, path = 'same', esc  = None)
+    d = []
+    with open(txtfile,'r') as source:
+        line1 = source.readline()
+        skipline1 = False
+        if len(line1)<=1:
+            line1 = source.readline()
+            skipline1 = True
+        if kw.esc == None or kw.esc not in line1:
+            if '\t' not in line1:
+                numspc = maxRepeating(line1,guess=' ')
+                kw.esc = "".join([numspc[0] for i in range(numspc[1])])
+                                
+            else:
+                kw.esc = '\t'
+    
+    with open(txtfile,'r') as source:
+        if skipline1 == True:
+            source.readline()
+            
+        for line in source:
+            line = line.strip('\n')
+            fields = line.split(kw.esc)
+            d.append(fields)  
+    if len(d[-1]) < len(d[0]):
+        d.pop(-1)
+    floatcol = np.zeros([len(d),len(d[0])])
+    for i in range(len(d)):         
+        for k in range(len(d[0])):
+            try:
+                A = float(d[i][k])
+                floatcol[i,k] = 1
+            except:
+                floatcol[i,k] = 0
+    LC = sum(floatcol[:,0])
+    RC = sum(floatcol[:,1])
+    
+    if LC > RC:
+        VarI = 0
+        FieldI = 1
+    else:
+        VarI = 1
+        FieldI = 0
+    d_dict = {}            
+    for ent in d:
+        try:
+            ent[VarI] = float(ent[VarI])
+            d_dict[ent[FieldI]] = float(ent[VarI])
+        except:
+            d_dict[ent[FieldI]] =  ent[VarI]
+    return(d_dict)
+
 def MatLoader(file,**kwargs):
     """
 
@@ -852,62 +948,64 @@ def MatLoader(file,**kwargs):
         txtlp = Get_FileList(path, ext='.txt',pathtype='abs')[0]
 
         txtind = [i for i, s in enumerate(txtlp['.txt']) if (s.split(S_ESC)[-1]).split('.')[0] in fname]
-        data['txtfilepath'] = txtlp['.txt'][txtind[0]]
-        data['txtname'] = data['txtfilepath'].split(S_ESC)[-1]
-        d = []
-        
-        #determine escape character if none is given
-        
-        with open(data['txtfilepath'],'r') as source:
-            line1 = source.readline()
-            skipline1 = False
-            if len(line1)<=1:
+        try:
+            data['txtfilepath'] = txtlp['.txt'][txtind[0]]
+            data['txtname'] = data['txtfilepath'].split(S_ESC)[-1]
+            d = []
+            
+            #determine escape character if none is given
+            
+            with open(data['txtfilepath'],'r') as source:
                 line1 = source.readline()
-                skipline1 = True
-            if kw.esc == None or kw.esc not in line1:
-                if '\t' not in line1:
-                    numspc = maxRepeating(line1,guess=' ')
-                    kw.esc = "".join([numspc[0] for i in range(numspc[1])])
-                                    
-                else:
-                    kw.esc = '\t'
-        
-        with open(data['txtfilepath'],'r') as source:
-            if skipline1 == True:
-                source.readline()
-                
-            for line in source:
-                line = line.strip('\n')
-                fields = line.split(kw.esc)
-                d.append(fields)  
-        if len(d[-1]) < len(d[0]):
-            d.pop(-1)
-        floatcol = np.zeros([len(d),len(d[0])])
-        for i in range(len(d)):         
-            for k in range(len(d[0])):
-                try:
-                    A = float(d[i][k])
-                    floatcol[i,k] = 1
-                except:
-                    floatcol[i,k] = 0
-        LC = sum(floatcol[:,0])
-        RC = sum(floatcol[:,1])
-        
-        if LC > RC:
-            VarI = 0
-            FieldI = 1
-        else:
-            VarI = 1
-            FieldI = 0
+                skipline1 = False
+                if len(line1)<=1:
+                    line1 = source.readline()
+                    skipline1 = True
+                if kw.esc == None or kw.esc not in line1:
+                    if '\t' not in line1:
+                        numspc = maxRepeating(line1,guess=' ')
+                        kw.esc = "".join([numspc[0] for i in range(numspc[1])])
+                                        
+                    else:
+                        kw.esc = '\t'
+            
+            with open(data['txtfilepath'],'r') as source:
+                if skipline1 == True:
+                    source.readline()
                     
-        for ent in d:
-            try:
-                ent[VarI] = float(ent[VarI])
-                data[ent[FieldI]] = float(ent[VarI])
-            except:
-                data[ent[FieldI]] =  ent[VarI]
-        cprint(['Loaded auxilary variables from file =',data['txtfilepath'], 'successfully!\n','Added:',str(d)],mt=['note','stat','note','note','stat'])
-
+                for line in source:
+                    line = line.strip('\n')
+                    fields = line.split(kw.esc)
+                    d.append(fields)  
+            if len(d[-1]) < len(d[0]):
+                d.pop(-1)
+            floatcol = np.zeros([len(d),len(d[0])])
+            for i in range(len(d)):         
+                for k in range(len(d[0])):
+                    try:
+                        A = float(d[i][k])
+                        floatcol[i,k] = 1
+                    except:
+                        floatcol[i,k] = 0
+            LC = sum(floatcol[:,0])
+            RC = sum(floatcol[:,1])
+            
+            if LC > RC:
+                VarI = 0
+                FieldI = 1
+            else:
+                VarI = 1
+                FieldI = 0
+                        
+            for ent in d:
+                try:
+                    ent[VarI] = float(ent[VarI])
+                    data[ent[FieldI]] = float(ent[VarI])
+                except:
+                    data[ent[FieldI]] =  ent[VarI]
+            cprint(['Loaded auxilary variables from file =',data['txtfilepath'], 'successfully!\n','Added:',str(d)],mt=['note','stat','note','note','stat'])
+        except:
+            cprint("Something went wrong - I probably didn\'t find a matching .txt file :/. The script continued none the less.",mt='err' )
         
     tranconf = 0
     powconf  = 0 
@@ -1135,6 +1233,16 @@ class ezplot(object):
                      'spd':'spd','sub_plot_dim':'spd'}
         kuniq = np.unique(list(kwargdict.keys()))
         
+        def sp_id_checker(kw):
+            if kw.ax_id == None:
+                for i in range(len(self.ax)):
+                    if self.ax[i].has_data() == False:
+                        kw.ax_id = i
+                        break
+                    
+            if kw.ax_id == None:
+                kw.ax_id = 0
+            return(kw.ax_id)
         for key in kwargs.keys():
             if key not in kuniq:
                 kwargdict[key] = key
@@ -1161,7 +1269,8 @@ class ezplot(object):
                     Tot_coord.append([x,y])
         """
         self.sps = []
-        self.ax  = {} 
+        self.ax  = {}
+        self.mappable = {} 
         self.Pkwargs = {}
         for key,val in kwargs.items():
             if key not in kuniq:
@@ -1173,13 +1282,24 @@ class ezplot(object):
             
             for i in range(len(self.sps)):
                 self.ax[i] =  self.fig.add_subplot(self.gspec[self.sps[i][0],self.sps[i][1]],**self.Pkwargs)
+                self.mappable[i] = i
         else:
             for i in range(kw.gspec[0]*kw.gspec[1]):
                 self.ax[i] =  self.fig.add_subplot(self.gspec[i],**self.Pkwargs)
                 
                 
-            
-    def quiver(self,data,**kwargs):
+    def sp_id_checker(self,kw):
+        if kw.ax_id == None:
+            for i in range(len(self.ax)):
+                if self.ax[i].has_data() == False:
+                    kw.ax_id = i
+                    break
+                
+        if kw.ax_id == None:
+            kw.ax_id = 0
+        return(kw.ax_id)
+    
+    def fquiver(self,data,**kwargs):
         """        
         This function makes a quiver plot in the selected AXIS! (so self.ax[int].quiver(data=[x],[y],**kwargs)
         data must be in the format: [x,y,z,xdir,ydir,zdir] where x,y,z are vector locations, and xdir,ydir,zdir give the magnitude and direction of the vector.
@@ -1214,17 +1334,8 @@ class ezplot(object):
         x = data2[0]; y = data2[1]; z = data2[2]
         xdir = data2[3]; ydir = data2[4]; zdir = data2[5]                
                 
-            
-        if kw.ax_id == None:
-            for i in range(len(self.ax)):
-                if self.ax[i].has_data() == False:
-                    kw.ax_id = i
-                    break
-                
-        if kw.ax_id == None:
-            kw.ax_id = 0
-        
-        
+        kw.ax_id = self.sp_id_checker(kw)    
+  
         self.Pkwargs = {}
         for key,val in kwargs.items():
             if key not in kuniq:
@@ -1233,10 +1344,69 @@ class ezplot(object):
         self.ax[kw.ax_id].quiver(x,y,z,xdir,ydir,zdir, **self.Pkwargs)
         pass
     
+    def DFT_Intensity_Plot(self,xgrid,ygrid,Eabs,gridscale,**kwargs):
+        """
+        xgrid is the x_min->x_max parameters of your grid (set in Lumerical)
+        ygrid is the y_min->y_max parameters of your grid (set in Lumerical)
+        Eabs is your DFT E field data, modified as per the lumerical document - you can likely do this here later, but for now this will have to do
+        gridscale is the length unit per grid square (usually 1e-6)
+        """
+        kwargdict = {'ax_id':'ax_id','axisid':'ax_id','axid':'ax_id','cmap':'cmap','vmin':'vmin','vmax':'vmax'}
+        kuniq = np.unique(list(kwargdict.keys()))
+        
+        for key in kwargs.keys():
+            if key not in kuniq:
+                kwargdict[key] = key
+        kw = KwargEval(kwargs,kwargdict,ax_id = None,cmap='jet',vmin=None,vmax=None)
+        kw.ax_id = self.sp_id_checker(kw)    
+        
+        self.Pkwargs = {}
+        for key,val in kwargs.items():
+            if key not in kuniq:
+                self.Pkwargs[key] = val
+                
+        xgmod = xgrid*gridscale
+        ygmod = ygrid*gridscale
+
+        
+        self.ax[kw.ax_id].set_xlabel('x coordinate [$\mu$ m]')
+        self.ax[kw.ax_id].set_ylabel('y coordinate [$\mu$ m]')
+        
+        # Linear scale region
+        self.mappable[kw.ax_id] = self.ax[kw.ax_id].pcolor(xgmod,ygmod,Eabs,cmap=kw.cmap,vmin=kw.vmin,vmax=kw.vmax)
+        
+        # Important
+        self.ax[kw.ax_id].set_aspect('equal')
+
         
         
         
+def MergeList(path,target,**kwargs):
+        """
+        target is filetype, so ".txt"
+        kwargs:
+            c/contains - type:str. Specify that a specific substring must ALSO be included in the mergelist
         
+        """
+        kwargdict = {'contains':'contains','c':'c',
+                     'sort':'sort','name':'name','n':'name'}
+        kw = KwargEval(kwargs, kwargdict,c=False,sort='numeric',name='MergeList')
+        
+        MListOUT = path+'\\'+kw.name+'.txt'
+        if kw.c == False:
+            DirList  = [file for file in Get_FileList(path,ext=(target),pt='abs',sort=kw.sort)[0][target] if file.endswith(target)]
+        elif type(kw.c) == str:
+            DirList  = [file for file in Get_FileList(path,ext=(target),pt='abs',sort=kw.sort)[0][target] if file.endswith(target) and kw.c in file]
+                
+            
+            
+            
+        FList    = ['file \''+DirList[n]+'\' \n' for n in range(len(DirList))]
+        MergeList = open(MListOUT, "w")
+        MergeList.write("".join(FList))
+        MergeList.close()
+        #ffmpeg -f concat -i MergeList.txt -c copy output.mp4
+
         
         
         
