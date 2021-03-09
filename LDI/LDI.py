@@ -1381,31 +1381,31 @@ class ezplot(object):
         
         
         
-# def MergeList(path,target,**kwargs):
-#         """
-#         target is filetype, so ".txt"
-#         kwargs:
-#             c/contains - type:str. Specify that a specific substring must ALSO be included in the mergelist
+def MergeList(path,target,**kwargs):
+        """
+        target is filetype, so ".txt"
+        kwargs:
+            c/contains - type:str. Specify that a specific substring must ALSO be included in the mergelist
         
-#         """
-#         kwargdict = {'contains':'contains','c':'c',
-#                      'sort':'sort','name':'name','n':'name'}
-#         kw = KwargEval(kwargs, kwargdict,c=False,sort='numeric',name='MergeList')
+        """
+        kwargdict = {'contains':'contains','c':'c',
+                      'sort':'sort','name':'name','n':'name'}
+        kw = KwargEval(kwargs, kwargdict,c=False,sort='numeric',name='MergeList')
         
-#         MListOUT = path+'\\'+kw.name+'.txt'
-#         if kw.c == False:
-#             DirList  = [file for file in Get_FileList(path,ext=(target),pt='abs',sort=kw.sort)[0][target] if file.endswith(target)]
-#         elif type(kw.c) == str:
-#             DirList  = [file for file in Get_FileList(path,ext=(target),pt='abs',sort=kw.sort)[0][target] if file.endswith(target) and kw.c in file]
+        MListOUT = path+'\\'+kw.name+'.txt'
+        if kw.c == False:
+            DirList  = [file for file in Get_FileList(path,ext=(target),pt='abs',sort=kw.sort)[0][target] if file.endswith(target)]
+        elif type(kw.c) == str:
+            DirList  = [file for file in Get_FileList(path,ext=(target),pt='abs',sort=kw.sort)[0][target] if file.endswith(target) and kw.c in file]
                 
             
             
             
-#         FList    = ['file \''+DirList[n]+'\' \n' for n in range(len(DirList))]
-#         MergeList = open(MListOUT, "w")
-#         MergeList.write("".join(FList))
-#         MergeList.close()
-#         #ffmpeg -f concat -i MergeList.txt -c copy output.mp4         
+        FList    = ['file \''+DirList[n]+'\' \n' for n in range(len(DirList))]
+        MergeList = open(MListOUT, "w")
+        MergeList.write("".join(FList))
+        MergeList.close()
+        #ffmpeg -f concat -i MergeList.txt -c copy output.mp4         
             
  
 def coltxt_read(filename,**kwargs):
