@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Sep 23 11:12:46 2020
-
 @author: vidar
 """
 
@@ -89,7 +88,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="LDI-DeltaMod",
-    version="0.0.4",
+    version="0.0.3",
     packages=find_packages(),
     scripts=[TrgtScr],
 
@@ -124,4 +123,3 @@ setup(
 
     # could also include long_description, download_url, etc.
 )
-    
