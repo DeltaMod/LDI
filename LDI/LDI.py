@@ -1405,7 +1405,7 @@ def MergeList(path,target,**kwargs):
         MergeList = open(MListOUT, "w")
         MergeList.write("".join(FList))
         MergeList.close()
-        #ffmpeg -f concat -i MergeList.txt -c copy output.mp4            
+        #ffmpeg -f concat -i MergeList.txt -c copy output.mp4         
             
  
 def coltxt_read(filename,**kwargs):
@@ -1540,7 +1540,7 @@ def coltxt_read(filename,**kwargs):
             if type(data_out[key]) == np.ndarray:
                 data_out[key] = data_out[key][~np.isnan(data_out[key])]
         
-    return(data_out) 
+    return(data_out)
             
 
 
