@@ -1399,7 +1399,140 @@ def MergeList(path,target,**kwargs):
             DirList  = [file for file in Get_FileList(path,ext=(target),pt='abs',sort=kw.sort)[0][target] if file.endswith(target) and kw.c in file]
                 
             
+ 
+def coltxt_read(filename,**kwargs):
+    """
+    **kwargs :
+        cn/colnames/columns - optional list of strings that contain names for all colums - will be used in dict item to store the variables afterwards
+        dl/delimiter/delim - if known, provide the delimeter for the data - will make the function faster, but it should still run 
+        dt/datatype        - If you have string data only, you need to type in "string", otherwise it's not going to find your delimeter properly. Default is "mixed"
+    Returns
+    -------
+    
+
+    """
+    
+    kwargdict = {'cn':'cn','colnames':'cn','columns':'cn',
+                 'delimiter':'dl','delim':'dl','dl':'dl',
+                 'datatype':'dt','dt':'dt',
+                 'cu':'cleanup','cleanup':'cleanup','clean':'clean'}
+    #Collecting kwargs
+    kw = KwargEval(kwargs, kwargdict, cn = [],dl=None,dt='mixed',cleanup = True)
+    
+    if kw.dl is None:
+        #If the delimeter is None, then we need to guess which delimiter it could be
+        #TLDR: check if any of ['\t', '\s' , ',' , ';'] split to match the total number of columns
+        with open(filename,'r') as f:
+            fline = f.readline()
             
+            #First, we check if the total number of strings is higher than the total number of integers
+            #This is done to check what we need to do in order to guess the correct delimeter.
+            if kw.dt == "mixed":
+                chars = 0
+                nums  = 0
+                for letter in fline:
+                    try:
+                        int(letter)
+                        nums  += 1
+                    except:
+                        chars +=1
+                
+                if chars>nums:
+                    fline = f.readline()
+
+                    
+            esc_chars =  ['\t', ' ' , ',' , ';']
+            for esc in esc_chars:
+                char,num = maxRepeating(fline,guess=esc)
+                line = fline
+                if char == esc and num!=1:
+                    esc = "".join([esc for i in range(num)])
+                
+                if "\n" in line:
+                    line = line.split('\n')[0]
+
+                    
+                line = line.split(esc)
+                
+                if line[-1] == '':
+                    line.pop(-1)
+                    
+                if len(line) == 1:
+                    try:
+                        int(line)
+                        colnum = 1
+                    except:
+                        None
+                if len(line)>1:
+                    try:
+                        for splt in line:
+                            test = float(splt)
+                        colnum = len(line)
+                        kw.dl = esc
+                        
+                    except:
+                        None
+    
+    try:
+        data = np.genfromtxt(filename,delimiter=kw.dl)
+    except ValueError:
+        cprint('Delimeter was probably not found automatically, please provide one next time you run this command',mt='err')
+    
+    colnum = data.shape[1]
+    rownum = data.shape[0]
+
+    if np.isnan(data[:,-1]).all():
+        colnum -= 1
+        data = np.delete(data, -1, 1)
+    
+    if np.isnan(data[0,:]).all():
+        rownum -=1
+        data = np.delete(data, 0, 0)
+    
+    
+        
+    with open(filename,'r') as f:
+        if kw.dl is not None:
+            line = f.readline().split(kw.dl)
+            if len(line) == colnum + 1:
+                del(line[-1])
+            if len(line) == colnum:
+                colnames = line
+                    
+    dictnames = []
+    dictnum   = {}
+    if len(kw.cn) !=0:
+        dictnames = kw.cn
+        if len(dictnames) != colnum:
+            for i in range(len(dictnames),colnum):
+                dictnames.append(str(i))
+    else:
+        if len(max(colnames))<5:
+            dictnames = colnames
+            unames    = set(dictnames)
+            
+            if len(dictnames) != len(unames):
+                for name in unames:
+                    dictnum[name] = 1
+                for i in range(len(dictnames)):
+                    dictnum[dictnames[i]] += 1
+                    dictnames[i] = dictnames[i]+'_'+str(dictnum[dictnames[i]]-1)
+                    
+        elif len(max(colnames))>5:
+            dictnames = [str(i) for i in range(colnum)]
+            
+    data_out = {}
+    data_out['colnames'] = colnames
+    
+    for i in range(data.shape[1]):
+        data_out[dictnames[i]] = data[:,i]
+    
+    if kw.cleanup == True:
+        for key in data_out.keys():
+            if type(data_out[key]) == np.ndarray:
+                data_out[key] = data_out[key][~np.isnan(data_out[key])]
+        
+    return(data_out) 
             
         FList    = ['file \''+DirList[n]+'\' \n' for n in range(len(DirList))]
         MergeList = open(MListOUT, "w")
@@ -1409,8 +1542,10 @@ def MergeList(path,target,**kwargs):
 
         
         
-        
-        
+def DefaultGrid(ax):
+    ax.grid(which='major', color='darkgrey', linestyle='--')
+    ax.grid(which='minor', color='#CCCCCC', linestyle=':')        
+  
         
         
         
