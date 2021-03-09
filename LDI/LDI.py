@@ -1399,6 +1399,14 @@ def MergeList(path,target,**kwargs):
             DirList  = [file for file in Get_FileList(path,ext=(target),pt='abs',sort=kw.sort)[0][target] if file.endswith(target) and kw.c in file]
                 
             
+            
+            
+        FList    = ['file \''+DirList[n]+'\' \n' for n in range(len(DirList))]
+        MergeList = open(MListOUT, "w")
+        MergeList.write("".join(FList))
+        MergeList.close()
+        #ffmpeg -f concat -i MergeList.txt -c copy output.mp4            
+            
  
 def coltxt_read(filename,**kwargs):
     """
@@ -1534,11 +1542,7 @@ def coltxt_read(filename,**kwargs):
         
     return(data_out) 
             
-        FList    = ['file \''+DirList[n]+'\' \n' for n in range(len(DirList))]
-        MergeList = open(MListOUT, "w")
-        MergeList.write("".join(FList))
-        MergeList.close()
-        #ffmpeg -f concat -i MergeList.txt -c copy output.mp4
+
 
         
         
