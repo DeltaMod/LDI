@@ -65,7 +65,7 @@ def visit_ImportFrom(node):
 def module_filter(modules):
     mod2 = list(modules)
     for module in mod2:
-         if module in ["mpl_toolkits","json","time","sys","os","tkinter","collections"]:
+         if module in ["mpl_toolkits","json","time","sys","os","tkinter","collections","csv"]:
              modules.remove(module)
 
     return(list(modules))
@@ -88,7 +88,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="LDI-DeltaMod",
-    version="0.0.4",
+    version="0.0.5",
     packages=find_packages(),
     scripts=[TrgtScr],
 
