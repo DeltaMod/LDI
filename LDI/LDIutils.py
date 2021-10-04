@@ -1546,7 +1546,8 @@ def coltxt_read(filename,**kwargs):
         
 def DefaultGrid(ax):
     ax.grid(which='major', color='darkgrey', linestyle='--')
-    ax.grid(which='minor', color='#CCCCCC', linestyle=':')        
+    ax.grid(which='minor', color='#CCCCCC', linestyle=':')   
+  
   
         
         
