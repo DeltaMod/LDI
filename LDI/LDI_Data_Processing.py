@@ -65,6 +65,26 @@ New method of importing data that does not require manual assignment of the keys
 SPD  = {'Abs':[],'Scat':[],'xdim':[],'ydim':[],'zdim':[]}
 
 
+
+PlotParam = {'DFT Plot':True,'Cross Section':True,'Save Figure':False}
+#First load any raw data into Dproc
+
+if UV['Debug'] == False:
+    Dproc = {} # Create an empty dictionary to store your data in 
+    for file in DList['.mat']:
+        MDat,MFi = MatLoader(file,txt=UV['txt_import'])
+        
+        if 'lambda' not in MDat.keys():
+            try:
+                MDat['lambda'] = MatLoader("Z:\\HDD-PC\\Work\\University Work\\Physics\\PhD Local Storage\\Data\\Yagi-Uda\\DirectorResonance-18-02-2021\\WAVELENGTH.mat")[0]['lambda']
+            except:
+                cprint('lambda is missing, your results might not come out right',mt='err')
+        #Here, you can add a **function** that calculates something from each file's dataset, but not as a big paragraph.
+        Dproc = Prog_Dict_Importer(Dproc,MDat)
+        
+        
+#%%        
+
 PlotParam = {'DFT Plot':True,'Cross Section':True,'Save Figure':False}
 if UV['Debug'] == False:
     Dproc = {} # Create an empty dictionary to store your data in 
