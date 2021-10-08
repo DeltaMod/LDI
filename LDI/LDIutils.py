@@ -60,6 +60,61 @@ def npy_filehandler(**kwargs):
         return(data)
             
 
+def LDI_Data_Import(FLTuple,**kwargs):
+    kwargdict = {'ikey':'ikey','ikeys':'ikey'}
+    
+    kw = KwargEval(kwargs, kwargdict, ikey=[])
+    print(kw.ikey)
+    DList = FLTuple[0]
+    NList = FLTuple[1]
+    Dproc = {} # Create an empty dictionary to store your data in 
+    for i,txtfile in enumerate(NList['.txt']):
+        mfiles  = list(filter(lambda x: txtfile.split('.txt')[0] in x, DList['.mat']))
+        MDat = {}; 
+   # try:
+        for mfile in mfiles:
+            MDat = {**MDat,**MatLoader(mfile)[0]}
+            #Then do calculations on the longer data sets and store only the specific single data needed in MDat
+        if 'Pabs' in MDat.keys():
+            MDat['P_abs'] = np.reshape(MDat['Pabs'],[MDat['lambda'].shape[0],MDat['z'].shape[0],MDat['y'].shape[0],MDat['x'].shape[0]])
+            cprint(['Now processing file: ',str(mfile)],mt='curio')
+        if "Pabs_total" in MDat.keys():
+            MDat['P_tot']  = AbsPowIntegrator(MDat['P_abs'],MDat['x'],MDat['y'],MDat['z'],MDat['lambda'])
+            MDat['AbsPow'] = max(MDat['P_tot'])
+        TDat = txt_dict_loader(DList['.txt'][i])
+        Dproc = Prog_Dict_Importer(Dproc,{**TDat,**MDat})
+        
+        if "ENW_x" and "ENW_y" and "ENW_z" in Dproc.keys():
+            anw_l = np.array([0,0,Dproc['ENW_z']])
+            enw_l = np.array([Dproc['ENW_x'],Dproc['ENW_y'],Dproc['ENW_z']])
+            squared_dist = np.sum((anw_l-enw_l)**2, axis=0)
+            if "ENW_z_rot" in Dproc.keys():
+                enw_rot = Dproc['ENW_z_rot'] 
+    
+    
+            if Dproc['ENW_y'] == 0:
+                atdeg =  0
+            else:
+                atdeg = np.degrees(np.arctan(abs(Dproc['ENW_x']/Dproc['ENW_y']))) 
+        
+            rel_rot = enw_rot + atdeg
+            
+            if rel_rot>180:
+                rel_rot = atdeg - (180 - enw_rot)  
+            Dproc = Prog_Dict_Importer(Dproc,{'rel_rot':rel_rot})
+            Dproc = Prog_Dict_Importer(Dproc,{'s_d':np.sqrt(squared_dist)})
+        
+  #  except:
+                
+            
+        if 'lambda' not in Dproc.keys():
+            cprint("You need to modify your data to contain lambda, or provide it separately")
+                
+        #Here, you can add a **function** that calculates something from each file's dataset, but not as a big paragraph.
+        
+        
+    return(Dproc)
+        
 
 def Bulk_CSV_Load(filename):
     if ".csv" not in filename:
@@ -880,7 +935,7 @@ def txt_dict_loader(txtfile,**kwargs):
         except:
             d_dict[ent[FieldI]] =  ent[VarI]
     return(d_dict)
-
+          
 def MatLoader(file,**kwargs):
     """
 
@@ -940,21 +995,23 @@ def MatLoader(file,**kwargs):
     data['matname'] = mname
     
     #%% .txt File Loading
-    if kw.txt == True:
-        
-        fname = mname.split('.')[0]
-        if kw.tf == None and kw.path == 'same':
-            path = os.path.dirname(file)
-        txtlp = Get_FileList(path, ext='.txt',pathtype='abs')[0]
+    #Always guess the text filename
+    fname = mname.split('.')[0]
+    if kw.tf == None and kw.path == 'same':
+        path = os.path.dirname(file)
+    txtlp = Get_FileList(path, ext='.txt',pathtype='abs')[0]
 
-        txtind = [i for i, s in enumerate(txtlp['.txt']) if (s.split(S_ESC)[-1]).split('.')[0] in fname]
-        try:
-            data['txtfilepath'] = txtlp['.txt'][txtind[0]]
-            data['txtname'] = data['txtfilepath'].split(S_ESC)[-1]
-            d = []
-            
+    txtind = [i for i, s in enumerate(txtlp['.txt']) if (s.split(S_ESC)[-1]).split('.')[0] in fname]
+    try:
+        data['txtfilepath'] = txtlp['.txt'][txtind[0]]
+        data['txtname'] = data['txtfilepath'].split(S_ESC)[-1]
+        d = []
+    except:
+        None
+        
+    if kw.txt == True:
             #determine escape character if none is given
-            
+        try:
             with open(data['txtfilepath'],'r') as source:
                 line1 = source.readline()
                 skipline1 = False
@@ -1042,8 +1099,9 @@ def Prog_Dict_Importer(Dict, data, **kwargs):
     If this comes from you wanting to merge data sets - make sure that no two fields share the same name, else you will get arrays of different lengths.
 
     """
-    kwargdict = {'maxlen':'ml','length':'ml','ml':'ml'}
-    kw = KwargEval(kwargs, kwargdict, ml = 1)
+    kwargdict = {'maxlen':'ml','length':'ml','ml':'ml',
+                 'ikeys':'ikey','ikey':'ikey'}
+    kw = KwargEval(kwargs, kwargdict, ml = 1,ikey=[])
     for key in data.keys():
         #test if iterable:
         try:
@@ -1057,7 +1115,7 @@ def Prog_Dict_Importer(Dict, data, **kwargs):
             Dict[key] = []
         else:
             if Iterable == True:
-                if len(data[key]) <= kw.ml or type(data[key]) == str:
+                if len(data[key]) <= kw.ml or type(data[key]) == str or key in kw.ikey:
                     Dict[key].append(data[key])
             else:
                 Dict[key].append(data[key])

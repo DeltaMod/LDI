@@ -27,8 +27,7 @@ from collections import Counter
 import natsort
 from scipy.constants import e
 
-
-from LDI import (Get_FileList,MatLoader,CUV,jsonhandler,cprint,PathSet,AbsPowIntegrator,Rel_Checker,DataDir,Init_LDI,Prog_Dict_Importer,ezplot,MergeList,npy_filehandler)
+from LDIutils import (LDI_Data_Import,txt_dict_loader,Get_FileList,MatLoader,CUV,jsonhandler,cprint,PathSet,AbsPowIntegrator,Rel_Checker,DataDir,Init_LDI,Prog_Dict_Importer,ezplot,MergeList,npy_filehandler)
 
 ##setting a default style:
 from Graph_Styles import graph_style
@@ -43,9 +42,10 @@ UV['txt_import'] = True
 DEFINING DATA DIRECTORIES AND GETTING THE FILES FROM THE CORRECT ONE
 """
 #We get a list of all files in dicts matching the number of extensions we are searching for.
-DIR,DIRPT = Rel_Checker(DataDir(act='load')['8'])
+DIR,DIRPT = Rel_Checker(DataDir(act='load')['9'])
 
-DList,NList = Get_FileList(DIR,pathtype=DIRPT, ext = (('mat','txt')),sorting='numeric')
+FLTuple = DList,NList = Get_FileList(DIR,pathtype=DIRPT, ext = (('mat','txt')),sorting='numeric')
+
 if len(DList['.mat']) == 0:
     DList,NList = Get_FileList(DIR,pathtype=DIRPT, ext = ('.npy'),sorting='numeric')
 #%%
@@ -70,27 +70,20 @@ PlotParam = {'DFT Plot':True,'Cross Section':True,'Save Figure':False}
 #First load any raw data into Dproc
 
 if UV['Debug'] == False:
-    Dproc = {} # Create an empty dictionary to store your data in 
-    for file in DList['.mat']:
-        MDat,MFi = MatLoader(file,txt=UV['txt_import'])
-        
-        if 'lambda' not in MDat.keys():
-            try:
-                MDat['lambda'] = MatLoader("Z:\\HDD-PC\\Work\\University Work\\Physics\\PhD Local Storage\\Data\\Yagi-Uda\\DirectorResonance-18-02-2021\\WAVELENGTH.mat")[0]['lambda']
-            except:
-                cprint('lambda is missing, your results might not come out right',mt='err')
-        #Here, you can add a **function** that calculates something from each file's dataset, but not as a big paragraph.
-        Dproc = Prog_Dict_Importer(Dproc,MDat)
-        
-        
+    Dproc = LDI_Data_Import(FLTuple)
 #%%        
+    MDat = MatLoader(DList['.mat'][2])[0]
+#%%
 
 PlotParam = {'DFT Plot':True,'Cross Section':True,'Save Figure':False}
 if UV['Debug'] == False:
     Dproc = {} # Create an empty dictionary to store your data in 
     try:
         for file in DList['.mat']:
-            MDat,MFi = MatLoader(file,txt=UV['txt_import'])
+            MDat,MFi = MatLoader(file)
+            if UV['txt_import'] == True:
+                txt_dict_loader(MDat['txtfilepath'])
+                
     
             if 'lambda' not in MDat.keys():
                 MDat['lambda'] = MatLoader("Z:\\HDD-PC\\Work\\University Work\\Physics\\PhD Local Storage\\Data\\Yagi-Uda\\DirectorResonance-18-02-2021\\WAVELENGTH.mat")[0]['lambda']
