@@ -40,7 +40,7 @@ UV = CUV(act = 'init')
 UV['txt_import'] = True
 #%%
 #We get a list of all files in dicts matching the number of extensions we are searching for.
-DIR,DIRPT = Rel_Checker(DataDir(act='load')['8'])
+DIR,DIRPT = Rel_Checker(DataDir(act='load')['7'])
 #DIR1 = 'C:\\Users\\vidar\\Desktop\\MD2_Contacts-24-08-2020'; DIRPT = 'abs'
 #DIR1 = "Z:\\HDD-PC\\Work\\University Work\\Physics\\PhD Local Storage\\Data\\MD2_NoContacts-24-08-2020"; DIRPT = 'abs'
 
