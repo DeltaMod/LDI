@@ -64,6 +64,8 @@ def LDI_Data_Import(FLTuple,**kwargs):
     kwargdict = {'ikey':'ikey','ikeys':'ikey'}
     
     kw = KwargEval(kwargs, kwargdict, ikey=[])
+    if type(kw.ikey) == "str":
+        kw.ikey = [kw.ikey]
     print(kw.ikey)
     DList = FLTuple[0]
     NList = FLTuple[1]
@@ -82,20 +84,26 @@ def LDI_Data_Import(FLTuple,**kwargs):
             MDat['P_tot']  = AbsPowIntegrator(MDat['P_abs'],MDat['x'],MDat['y'],MDat['z'],MDat['lambda'])
             MDat['AbsPow'] = max(MDat['P_tot'])
         TDat = txt_dict_loader(DList['.txt'][i])
-        Dproc = Prog_Dict_Importer(Dproc,{**TDat,**MDat})
-        
+        try:
+            #In the case that you are calculating the cross section
+            MDat['Q_Abs'] = np.max(MDat['Qabs'])
+            MDat['Q_Scat'] = np.max(MDat['Qscat'])
+        except:
+            None
+        Dproc = Prog_Dict_Importer(Dproc,{**TDat,**MDat},ikey=kw.ikey)
+
         if "ENW_x" and "ENW_y" and "ENW_z" in Dproc.keys():
-            anw_l = np.array([0,0,Dproc['ENW_z']])
-            enw_l = np.array([Dproc['ENW_x'],Dproc['ENW_y'],Dproc['ENW_z']])
+            anw_l = np.array([0,0,Dproc['ENW_z'][-1]])
+            enw_l = np.array([Dproc['ENW_x'][-1],Dproc['ENW_y'][-1],Dproc['ENW_z'][-1]])
             squared_dist = np.sum((anw_l-enw_l)**2, axis=0)
             if "ENW_z_rot" in Dproc.keys():
-                enw_rot = Dproc['ENW_z_rot'] 
+                enw_rot = Dproc['ENW_z_rot'][-1] 
     
     
-            if Dproc['ENW_y'] == 0:
+            if Dproc['ENW_y'][-1] == 0:
                 atdeg =  0
             else:
-                atdeg = np.degrees(np.arctan(abs(Dproc['ENW_x']/Dproc['ENW_y']))) 
+                atdeg = np.degrees(np.arctan(abs(Dproc['ENW_x'][-1]/Dproc['ENW_y'][-1]))) 
         
             rel_rot = enw_rot + atdeg
             
@@ -1113,13 +1121,14 @@ def Prog_Dict_Importer(Dict, data, **kwargs):
         #check if the key exists, and if not - create it
         if key not in Dict.keys():
             Dict[key] = []
-        else:
-            if Iterable == True:
-                if len(data[key]) <= kw.ml or type(data[key]) == str or key in kw.ikey:
-                    Dict[key].append(data[key])
-            else:
+    
+        if Iterable == True:
+            if (len(data[key]) <= kw.ml or type(data[key]) == str) or key in kw.ikey:
                 Dict[key].append(data[key])
             
+        else:
+            Dict[key].append(data[key])
+        
     return(Dict)
         
 def AbsPowIntegrator(Data,x,y,z,WL):
@@ -1606,7 +1615,153 @@ def DefaultGrid(ax):
     ax.grid(which='major', color='darkgrey', linestyle='--')
     ax.grid(which='minor', color='#CCCCCC', linestyle=':')   
   
-  
+def DProc_Plot(Dproc,gtype):
+    """
+    Function to guess what needs to be plotted from the data it has been given.
+    fig, which is an array containing figures.
+
+    """
+    
+    fig = [ezplot(fid=1)]
+    
+    note_dict = {}
+    
+    xvar,yvar,xlab,ylab,pltype = {
+                 'Director Rounding':['roundingradius dir','AbsPow',
+                                      'Director Rounding radius [m]','Power Fraction: '+r'${P_{abs}}/{P_{tot}}$','AbsPow_OneParam'],
+                 
+                 'Multi Dipole Director Rounding':['roundingradius dir','AbsPow',
+                                                   'Director Rounding radius [m]','Power Fraction: '+r'${P_{abs}}/{P_{tot}}$','AbsPow_OneParam'],
+                 
+                 'Variable Contacts':['GCx_span','AbsPow',
+                                      'Gold Contact span [m]','Power Fraction: '+r'${P_{abs}}/{P_{tot}}$','AbsPow_OneParam'], 
+                 
+                 'pabs variable contacts':['GCx_span','AbsPow',
+                                           'Gold Contact span [m]','Power Fraction: '+r'${P_{abs}}/{P_{tot}}$','AbsPow_OneParam'],
+                 
+                 "Director Separation":['dir_sep','AbsPow',
+                                        'Director Separation [m]','Power Fraction: '+r'${P_{abs}}/{P_{tot}}$','Dir_Sep'],
+                 
+                 "no contacts":['s_d','AbsPow',
+                                        'Distance from source [m]','Power Fraction: '+r'${P_{abs}}/{P_{tot}}$','gold_contacts'],
+                 
+                 "contacts":['s_d','AbsPow',
+                                        'Distance from source [m]','Power Fraction: '+r'${P_{abs}}/{P_{tot}}$','director_MIE'],
+                 
+                 "Waveguide Thickness":['wg_zspan','AbsPow',
+                                        'Waveguide Thickness','Power Fraction: '+r'${P_{abs}}/{P_{tot}}$','AbsPow_OneParam']
+                       }[Dproc['note'][0]]
+    
+    
+    if pltype == "AbsPow_OneParam":
+
+        try:
+            labl = {'Director Rounding':'Single-Dipole','Multi Dipole Director Rounding':'Multi-Dipole'}[Dproc['note'][0]]
+        except: 
+            labl=None
+
+        fig[0].ax[0].scatter(Dproc[xvar],Dproc[yvar],label=labl)
+        fig[0].ax[0].legend()
+    
+    elif pltype == "Dir_Sep":
+        NWuniq = list(np.unique(Dproc['NW_sep_dir']))
+        Dproc['dir_sep_p.NW'] = [[] for n in range(len(NWuniq))]
+        Dproc['abspow p.NW']     = [[] for n in range(len(NWuniq))]
+        
+        for i in range(0,len(Dproc['dir_sep'])):
+            NWind = NWuniq.index(Dproc['NW_sep_dir'][i])
+            Dproc['dir_sep_p.NW'][NWind].append(Dproc['dir_sep'][i])
+            Dproc['abspow p.NW'][NWind].append(Dproc['AbsPow'][i])
+
+        for i,nuq in enumerate(NWuniq):
+            if nuq != 0:
+                sca1 = fig[0].ax[0].scatter(Dproc['dir_sep_p.NW'][i],Dproc['abspow p.NW'][i],label='NW sep = ' + str(NWuniq[i]) +'m')
+            elif nuq == 0:
+                fig[0].ax[0].plot([min(x for x in Dproc['dir_sep'] if x !=0),max(Dproc['dir_sep'])],[Dproc['abspow p.NW'][i][0],Dproc['abspow p.NW'][i][0]],label='no antenna')
+                fig[0].ax[0].plot([min(x for x in Dproc['dir_sep'] if x !=0),max(Dproc['dir_sep'])],[Dproc['abspow p.NW'][i][1],Dproc['abspow p.NW'][i][1]],label='reflector only')
+        
+        lmbd = [910e-9*1/n for n in range(2,6)]
+        for i in range(len(lmbd)):    
+            fig[0].ax[0].plot([lmbd[i],lmbd[i]],[min(min(Dproc['abspow p.NW'])),max(max(Dproc['abspow p.NW']))],label='$\lambda/$'+str(i+2))
+        
+        fig[0].ax[0].set_xlim([1.6e-7,max(Dproc['dir_sep'])])
+        fig[0].ax[0].legend(ncol=2)
+    
+    ##########YOU WERE WORKING RIGHT HERE!
+    elif pltype == "gold_contacts":
+        if "no contacts" in Dproc['note']:
+            title = "Absorbed Power without Gold Contacts"
+        else:
+            title = "Absorbed Power with Gold Contacts"
+            
+        #2D plot
+        fig[0].ax[0].set_title(title)
+
+        sca1 = fig[0].ax[0].scatter(Dproc['s_d'],Dproc['AbsPow'],c=Dproc['rel_rot'],cmap='gnuplot')
+        cb1 = fig[0].ax[0].colorbar(sca1)
+        cb1.set_label('Relative Rotation '+r'$[\theta$]')
+    
+        """
+        LComp,LCompFi = MatLoader(DList['.mat'][0])
+        LComp['P_abs'] = np.reshape(LComp['Pabs'],[LComp['lambda'].shape[0],LComp['z'].shape[0],LComp['y'].shape[0],LComp['x'].shape[0]])   
+        #plt.imshow(np.rot90(LComp['P_abs'][0,:,:,6])) displays the same (xslice for [y,z]) as in lumerical
+        
+        LComp['P_tot'] = AbsPowIntegrator(LComp['P_abs'],LComp['x'],LComp['y'],LComp['z'],LComp['lambda'])
+        plt.figure(2)
+        plt.plot(LComp['lambda'],LComp['P_tot'])
+        I have no idea what this is?
+        """
+        
+    
+    
+        
+        PDP = []
+        PDR = []
+        PDL = []
+        PLP = []
+        PLR = []
+        PLL = []
+        TPDP = []
+        TPDL = []
+        TPDR = []
+        
+        for i in range(len(Dproc['AbsPow'])):
+            if Dproc['rel_rot'][i] < 60 or Dproc['rel_rot'][i] > 120:
+                PDP.append(Dproc['AbsPow'][i])
+                PDR.append(Dproc['rel_rot'][i])
+                PDL.append(Dproc['s_d'][i])
+            else:
+                PLP.append(Dproc['AbsPow'][i])
+                PLR.append(Dproc['rel_rot'][i])
+                PLL.append(Dproc['s_d'][i])
+            if Dproc['rel_rot'][i] < 10 or Dproc['rel_rot'][i] > 170:
+                if Dproc['ENW_x'][i] == 0:
+                     TPDP.append(Dproc['AbsPow'][i])
+                     TPDR.append(Dproc['rel_rot'][i])
+                     TPDL.append(Dproc['s_d'][i])
+        
+        fig.append(ezplot(fid=2)) 
+        
+        #2D plot
+        fig[1].ax[0].set_title(title)
+        fig[1].ax[0].set_xlabel('distance from source [m]')
+        fig[1].ax[0].set_ylabel('Power Fraction: '+r'${P_{abs}}/{P_{tot}}$')
+        fig[1].ax[0].grid(True)
+        fig[1].ax[0].scatter(PDL,PDP,c='cyan')
+        sca3 = fig[1].ax[0].scatter(PLL,PLP,c=PLR ,cmap='gnuplot')
+        fig[1].ax[0].scatter(TPDL,TPDP,c='green')
+        cb3 = fig[1].ax[0].colorbar(sca3)
+        cb3.set_label('Relative Rotation '+r'$[\theta$]')
+    
+    elif pltype == "director_MIE":
+        None
+    
+    #Labelling and Gridding
+    fig[0].ax[0].set_xlabel(xlab)
+    fig[0].ax[0].set_ylabel(ylab)
+    fig[0].ax[0].grid(True)
+    return(fig)
+    
         
         
         
