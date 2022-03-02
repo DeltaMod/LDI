@@ -965,6 +965,8 @@ def MatLoader(file,**kwargs):
    
     for k, v in f.items():
         FIELDDICT[k] = np.array(v)
+
+    # FILEDICT used once to get the keys then unused
     FIELDLIST = list(FIELDDICT.keys()) 
     
     data = {}
@@ -985,6 +987,9 @@ def MatLoader(file,**kwargs):
                 data[field] = np.array(f[FIELDLIST[i]][field])
             elif twokeys == False:
                 data[field] = np.array(f[field])
+            # perform a special check against Lumerical's complex notation
+            if data[field].dtype == np.dtype([('real', '<f8'), ('imag', '<f8')]) :
+                data[field] = data[field].view(complex)
                 
             if len(data[field].shape) == 2 and data[field].shape[0] == 1:
                 oldshape    = data[field].shape
